@@ -15,16 +15,21 @@ jobs:
       with:
         profile: minimal
         toolchain: nightly
+        override: true
         components: rust-src
+
     - name: Install xbuild
       uses: actions-rs/install@v0.1
       with:
         crate: cargo-xbuild
         version: latest
+
     - name: Cargo xbuild
       uses: actions-rs/cargo@v1
       with:
         command: xbuild
+
+
   test:
     name: Test x86_64
     runs-on: ubuntu-latest
@@ -37,16 +42,21 @@ jobs:
       with:
         profile: minimal
         toolchain: nightly
+        override: true
         components: rust-src
+
     - name: Install xbuild
       uses: actions-rs/install@v0.1
       with:
         crate: cargo-xbuild
         version: latest
+
     - name: Cargo xbuild
       uses: actions-rs/cargo@v1
       with:
         command: xtest
+
+
   lint:
     name: Linter pass
     runs-on: ubuntu-latest
@@ -59,17 +69,21 @@ jobs:
       with:
         profile: minimal
         toolchain: nightly
+        override: true
         components: rust-src
+        
     - name: Install xbuild
       uses: actions-rs/install@v0.1
       with:
         crate: cargo-xbuild
         version: latest
+
     - name: Cargo xbuild
       uses: actions-rs/cargo@v1
       with:
         command: xclippy
         args: -- -D warnings
+
     - name: Run cargo fmt
       uses: actions-rs/cargo@v1
       with:
