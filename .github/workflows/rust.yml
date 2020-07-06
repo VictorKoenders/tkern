@@ -23,6 +23,9 @@ jobs:
       with:
         crate: cargo-xbuild
         version: latest
+    
+    - name: Install qemu
+      run: sudo apt update && sudo apt install qemu -y
 
     - name: Install bootimage
       uses: actions-rs/install@v0.1
