@@ -11,7 +11,7 @@ use kernel::vga_println;
 pub extern "C" fn _start() -> ! {
     test_main();
 
-    loop {}
+    kernel::platform::halt_loop();
 }
 
 #[panic_handler]

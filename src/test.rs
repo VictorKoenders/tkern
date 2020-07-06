@@ -1,3 +1,4 @@
+pub use crate::platform::{exit_qemu_failed, exit_qemu_success};
 use core::panic::PanicInfo;
 
 pub trait Testable {
@@ -20,38 +21,22 @@ pub fn runner(tests: &[&dyn Testable]) {
     for test in tests {
         test.run();
     }
-    exit_qemu(QemuExitCode::Success);
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
-pub enum QemuExitCode {
-    Success = 0x10,
-    Failed = 0x11,
-}
-
-pub fn exit_qemu(exit_code: QemuExitCode) {
-    use x86_64::instructions::port::Port;
-
-    unsafe {
-        let mut port = Port::new(0xf4);
-        port.write(exit_code as u32);
-    }
+    exit_qemu_success();
 }
 
 pub fn panic_handler(info: &PanicInfo) -> ! {
     serial_println!("[failed]\n");
     serial_println!("Error: {}\n", info);
-    exit_qemu(QemuExitCode::Failed);
-    loop {}
+    exit_qemu_failed();
 }
 
 /// Entry point for `cargo xtest`
 #[cfg(test)]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    crate::init();
     crate::test_main();
-    loop {}
+    crate::platform::halt_loop();
 }
 
 #[cfg(test)]

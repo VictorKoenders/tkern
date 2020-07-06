@@ -9,19 +9,20 @@ use kernel::vga_println;
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    kernel::init();
     vga_println!("Hello World{}", "!");
 
     #[cfg(test)]
     test_main();
 
-    loop {}
+    kernel::platform::halt_loop();
 }
 
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     vga_println!("{}", info);
-    loop {}
+    kernel::platform::halt_loop();
 }
 
 #[cfg(test)]
