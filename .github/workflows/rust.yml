@@ -51,6 +51,12 @@ jobs:
         crate: cargo-xbuild
         version: latest
 
+    - name: Install bootimage
+      uses: actions-rs/install@v0.1
+      with:
+        crate: bootimage
+        version: latest
+
     - name: Cargo xbuild
       uses: actions-rs/cargo@v1
       with:
@@ -70,7 +76,7 @@ jobs:
         profile: minimal
         toolchain: nightly
         override: true
-        components: rust-src
+        components: rust-src, rustfmt, clippy
         
     - name: Install xbuild
       uses: actions-rs/install@v0.1
