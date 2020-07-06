@@ -4,9 +4,11 @@ name: Rust
 
 jobs:
   build:
-  - name: Nightly
-    uses: actions-rs/toolchain@v1
-    with:
-      profile: minimal
-      toolchain: nightly
-      components: xbuild
+    runs-on: ubuntu-latest
+    steps:
+    - name: Nightly
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        components: xbuild
