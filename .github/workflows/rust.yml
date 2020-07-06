@@ -3,34 +3,7 @@ on: [push, pull_request]
 name: Rust
 
 jobs:
-  build:
-    name: Build x86_64
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout sources
-      uses: actions/checkout@v2
-
-    - name: Install rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: nightly
-        override: true
-        components: rust-src
-
-    - name: Install xbuild
-      uses: actions-rs/install@v0.1
-      with:
-        crate: cargo-xbuild
-        version: latest
-
-    - name: Cargo xbuild
-      uses: actions-rs/cargo@v1
-      with:
-        command: xbuild
-
-
-  test:
+  test_x86_64:
     name: Test x86_64
     runs-on: ubuntu-latest
     steps:
@@ -43,7 +16,7 @@ jobs:
         profile: minimal
         toolchain: nightly
         override: true
-        components: rust-src
+        components: rust-src, llvm-tools-preview
 
     - name: Install xbuild
       uses: actions-rs/install@v0.1
@@ -57,7 +30,7 @@ jobs:
         crate: bootimage
         version: latest
 
-    - name: Cargo xbuild
+    - name: Run tests
       uses: actions-rs/cargo@v1
       with:
         command: xtest
