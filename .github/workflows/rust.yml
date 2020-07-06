@@ -6,9 +6,60 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Nightly
+    - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: nightly
-        components: xbuild
+        components: rust-src
+    - name: Install xbuild
+      uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-xbuild
+        version: latest
+    - name: Cargo xbuild
+      uses: actions-rs/cargo@v1
+      with:
+        command: xbuild
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        components: rust-src
+    - name: Install xbuild
+      uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-xbuild
+        version: latest
+    - name: Cargo xbuild
+      uses: actions-rs/cargo@v1
+      with:
+        command: xtest
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        components: rust-src
+    - name: Install xbuild
+      uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-xbuild
+        version: latest
+    - name: Cargo xbuild
+      uses: actions-rs/cargo@v1
+      with:
+        command: xclippy
+        args: -- -D warnings
+    - name: Run cargo fmt
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --all -- --check
