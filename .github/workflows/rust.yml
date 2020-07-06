@@ -4,8 +4,12 @@ name: Rust
 
 jobs:
   build:
+    name: Build x86_64
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+
     - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
@@ -22,8 +26,12 @@ jobs:
       with:
         command: xbuild
   test:
+    name: Test x86_64
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+
     - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
@@ -40,8 +48,12 @@ jobs:
       with:
         command: xtest
   lint:
+    name: Linter pass
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+
     - name: Install rust
       uses: actions-rs/toolchain@v1
       with:
