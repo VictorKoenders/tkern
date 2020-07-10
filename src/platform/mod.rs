@@ -1,5 +1,6 @@
 mod x86_64;
 
+pub mod ata;
 pub mod pic;
 pub use self::x86_64::*;
 

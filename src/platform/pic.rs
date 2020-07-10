@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use pc_keyboard::{layouts, DecodedKey, HandleControl, KeyCode, Keyboard, ScancodeSet1};
+use pc_keyboard::{layouts, HandleControl, Keyboard, ScancodeSet1};
 use pic8259_simple::ChainedPics;
 use spin::Mutex;
 
@@ -46,27 +46,7 @@ pub fn interrupt_timer() {
 }
 
 pub fn interrupt_keyboard(scancode: u8) {
-    let mut keyboard = KEYBOARD.lock();
-
-    if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
-        if let Some(key) = keyboard.process_keyevent(key_event) {
-            match key {
-                DecodedKey::Unicode(character) => {
-                    if character == '\x1b' {
-                        // escape
-                        super::exit_qemu_success();
-                    }
-                    vga_println!("{}", character);
-                }
-                DecodedKey::RawKey(key) => {
-                    if key == KeyCode::Escape {
-                        super::exit_qemu_success();
-                    }
-                    vga_println!("{:?}", key);
-                }
-            }
-        }
-    }
+    crate::task::keyboard::add_scancode(scancode);
     unsafe {
         notify_end_of_interrupt(InterruptIndex::Keyboard);
     }

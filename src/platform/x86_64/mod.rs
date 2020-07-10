@@ -1,5 +1,9 @@
 pub mod gdt;
 pub mod interrupts;
+pub mod memory;
+pub mod port;
+
+pub use x86_64::PrivilegeLevel;
 
 fn exit_qemu(exit_code: QemuExitCode) -> ! {
     use x86_64::instructions::port::Port;
@@ -29,4 +33,8 @@ pub fn halt_loop() -> ! {
     loop {
         x86_64::instructions::hlt();
     }
+}
+
+pub fn current_privilege() -> PrivilegeLevel {
+    x86_64::instructions::segmentation::cs().rpl()
 }
