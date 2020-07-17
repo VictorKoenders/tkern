@@ -16,6 +16,7 @@ extern crate alloc;
 pub mod driver;
 pub mod allocator;
 pub mod platform;
+pub mod sys;
 pub mod task;
 pub mod test;
 
