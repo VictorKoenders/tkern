@@ -6,13 +6,13 @@
 
 extern crate alloc;
 
-use bootloader::{bootinfo::MemoryRegionType, entry_point, BootInfo};
+use bootloader::{entry_point, BootInfo};
 use core::panic::PanicInfo;
 use kernel::{
     allocator,
     platform::memory::{self, prelude::*},
     task::{executor::Executor, Task},
-    vga_print, vga_println,
+    vga_println,
 };
 
 entry_point!(kernel_main);

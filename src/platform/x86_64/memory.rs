@@ -4,8 +4,7 @@ use spin::RwLock;
 use x86_64::{
     registers::control::Cr3,
     structures::paging::{
-        OffsetPageTable, Page, PageSize, PageTable as PageTableInner, PageTableFlags, PhysFrame,
-        Size4KiB,
+        OffsetPageTable, Page, PageTable as PageTableInner, PageTableFlags, PhysFrame, Size4KiB,
     },
 };
 
@@ -46,7 +45,7 @@ pub fn with_page_table<F, R>(mut callback: F) -> R
 where
     F: for<'a> FnMut(&'a PageTable) -> R,
 {
-    let mut lock = PAGE_TABLE.read();
+    let lock = PAGE_TABLE.read();
     callback(unsafe { &*lock.as_ptr() })
 }
 
@@ -61,7 +60,7 @@ where
     callback(unsafe { &mut *lock.as_mut_ptr() })
 }
 
-pub fn map_page_range(range: Range<usize>) {}
+pub fn map_page_range(_range: Range<usize>) {}
 
 unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut PageTableInner {
     let (level_4_table_frame, _) = Cr3::read();

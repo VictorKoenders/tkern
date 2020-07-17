@@ -10,7 +10,7 @@ struct Descriptor {
 }
 
 pub fn init() {
-    if let Some(descriptor) = search(0xE_0000..0xF_FFFF) {}
+    if let Some(_descriptor) = search(0xE_0000..0xF_FFFF) {}
 }
 
 fn search(range: Range<usize>) -> Option<&'static Descriptor> {

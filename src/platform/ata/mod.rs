@@ -1,3 +1,5 @@
+#![allow(dead_code)] // still experimental
+
 // Most of the information in the ata driver comes from:
 // - https://wiki.osdev.org/ATAPI
 // - https://wiki.osdev.org/ATA_PIO_Mode
