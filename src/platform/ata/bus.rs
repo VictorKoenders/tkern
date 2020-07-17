@@ -70,6 +70,10 @@ impl Bus {
         self.io_range.start
     }
 
+    pub fn read(&self) -> u8 {
+        Read::Data.read(self)
+    }
+
     pub fn set_drive(&self, drive: u8) {
         Write::DriveSelect.write(self, drive);
     }

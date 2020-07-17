@@ -1,7 +1,11 @@
+use core::{mem::MaybeUninit, ops::Range};
+use lazy_static::lazy_static;
+use spin::RwLock;
 use x86_64::{
     registers::control::Cr3,
     structures::paging::{
-        OffsetPageTable, Page, PageTable as PageTableInner, PageTableFlags, PhysFrame, Size4KiB,
+        OffsetPageTable, Page, PageSize, PageTable as PageTableInner, PageTableFlags, PhysFrame,
+        Size4KiB,
     },
 };
 
@@ -14,8 +18,11 @@ pub trait Mapper = x86_64::structures::paging::Mapper<Size4KiB>;
 pub trait FrameAllocator = x86_64::structures::paging::FrameAllocator<Size4KiB>;
 pub type MapError = x86_64::structures::paging::mapper::MapToError<Size4KiB>;
 pub type PageTable = OffsetPageTable<'static>;
-
 pub use x86_64::{PhysAddr, VirtAddr};
+
+lazy_static! {
+    static ref PAGE_TABLE: RwLock<MaybeUninit<PageTable>> = RwLock::new(MaybeUninit::uninit());
+}
 
 /// Initialize a new OffsetPageTable.
 ///
@@ -25,10 +32,36 @@ pub use x86_64::{PhysAddr, VirtAddr};
 /// to virtual memory at the passed `physical_memory_offset`. Also, this
 /// function must be only called once to avoid aliasing `&mut` references
 /// (which is undefined behavior).
-pub unsafe fn init(physical_memory_offset: VirtAddr) -> PageTable {
+pub unsafe fn init(physical_memory_offset: VirtAddr) {
     let level_4_table = active_level_4_table(physical_memory_offset);
-    OffsetPageTable::new(level_4_table, physical_memory_offset)
+    let page_table = OffsetPageTable::new(level_4_table, physical_memory_offset);
+    let mut lock = PAGE_TABLE.write();
+    *lock = MaybeUninit::new(page_table);
 }
+
+/// Get a reference to the current page table.
+///
+/// This function assumes `init` has been called before. If `init` is not called before, calling this function would be UB.
+pub fn with_page_table<F, R>(mut callback: F) -> R
+where
+    F: for<'a> FnMut(&'a PageTable) -> R,
+{
+    let mut lock = PAGE_TABLE.read();
+    callback(unsafe { &*lock.as_ptr() })
+}
+
+/// Get a mutable reference to the current page table.
+///
+/// This function assumes `init` has been called before. If `init` is not called before, calling this function would be UB.
+pub fn with_page_table_mut<F, R>(mut callback: F) -> R
+where
+    F: for<'a> FnMut(&'a mut PageTable) -> R,
+{
+    let mut lock = PAGE_TABLE.write();
+    callback(unsafe { &mut *lock.as_mut_ptr() })
+}
+
+pub fn map_page_range(range: Range<usize>) {}
 
 unsafe fn active_level_4_table(physical_memory_offset: VirtAddr) -> &'static mut PageTableInner {
     let (level_4_table_frame, _) = Cr3::read();

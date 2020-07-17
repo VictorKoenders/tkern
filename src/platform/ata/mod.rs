@@ -4,18 +4,24 @@
 // I highly recommend you skim through those article before reading the code in this file.
 
 mod bus;
+mod identity;
 
-use self::bus::*;
+use self::{bus::*, identity::Identity};
 
 #[derive(Debug)]
 pub enum Error {
     NoDeviceConnected,
     DriveDoesNotExist,
+    DriveNotAta,
+    AtapiOrSata,
+    CouldNotIdentify,
+    IdentifyTimeout,
 }
 
 pub struct BusState {
     bus: &'static Bus,
     current_drive: u8,
+    pub identity: Identity,
 }
 
 impl BusState {
@@ -40,16 +46,17 @@ impl BusState {
         }
 
         // otherwise the connected device is a non-packet device, and `IDENTIFY DEVICE` (0xEC) should work
-        let state = BusState {
+        let mut state = BusState {
             bus,
             current_drive: 0x0,
+            identity: Identity::default(),
         };
         // To use the IDENTIFY command, select a target drive by sending 0xA0 for the master drive, or 0xB0 for the slave, to the "drive select" IO port.
         state.identify(0xa0)?;
         Ok(state)
     }
 
-    fn identify(&self, drive: u8) -> Result<(), Error> {
+    fn identify(&mut self, drive: u8) -> Result<(), Error> {
         // for more info see https://wiki.osdev.org/ATA_PIO_Mode#IDENTIFY_command
 
         // To use the IDENTIFY command, select a target drive by sending 0xA0 for the master drive, or 0xB0 for the slave, to the "drive select" IO port.
@@ -69,10 +76,41 @@ impl BusState {
             return Err(Error::DriveDoesNotExist);
         }
 
+        if status.contains(Status::ERROR) {
+            // ATAPI or SATA devices are supposed to respond to an ATA IDENTIFY command by immediately reporting an error in the Status Register
+            return Err(Error::AtapiOrSata);
+        }
+
         // For any other value: poll the Status port until BUSY clears.
         while status.contains(Status::BUSY) {
             status = self.bus.get_status();
         }
+
+        // Because of some ATAPI drives that do not follow spec, at this point you need to check the LBAmid and LBAhi ports (0x1F4 and 0x1F5) to see if they are non-zero.
+        let mid = self.bus.get_lba_mid();
+        let high = self.bus.get_lba_high();
+        // If they are non-zero, the drive is not ATA, and you should stop polling
+        if mid > 0 && high > 0 {
+            return Err(Error::DriveNotAta);
+        }
+
+        // continue polling one of the Status ports until DRQ or ERR sets.
+        let mut count = 0;
+        while !status.contains(Status::ERROR) && status.contains(Status::DRQ) {
+            crate::platform::halt();
+            status = self.bus.get_status();
+            count += 1;
+            if count == 100 {
+                return Err(Error::IdentifyTimeout);
+            }
+        }
+
+        if status.contains(Status::ERROR) {
+            return Err(Error::CouldNotIdentify);
+        }
+
+        // the data is ready to read from the Data port.
+        self.identity.fill(self.bus);
 
         Ok(())
     }

@@ -29,6 +29,10 @@ pub fn exit_qemu_failed() -> ! {
     exit_qemu(QemuExitCode::Failed)
 }
 
+pub fn halt() {
+    x86_64::instructions::hlt();
+}
+
 pub fn halt_loop() -> ! {
     loop {
         x86_64::instructions::hlt();
