@@ -45,3 +45,6 @@ endif
 build/arch/$(arch)/%.o: arch/$(arch)/%.asm
 	mkdir -p $(shell dirname $@)
 	nasm -felf64 $< -o $@
+
+clippy:
+	cargo xclippy --target $(target).json

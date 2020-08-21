@@ -4,7 +4,7 @@ name: Rust
 
 jobs:
   lint:
-    name: Linter pass
+    name: Build & lint
     runs-on: ubuntu-latest
     steps:
     - name: Checkout sources
@@ -17,12 +17,24 @@ jobs:
         toolchain: nightly
         override: true
         components: rust-src, rustfmt, clippy
+        
+    - name: Install xbuild
+      uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-xbuild
+        version: latest
 
-    - name: Build
-      run: make all
+    - name: Install system dependencies
+      run: sudo apt update && sudo apt install make nasm -y
 
-    - name: Run cargo fmt
+    - name: Check formatting
       uses: actions-rs/cargo@v1
       with:
         command: fmt
         args: --all -- --check
+
+    - name: Clippy
+      run: make clippy
+
+    - name: Build
+      run: make all
