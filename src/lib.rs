@@ -1,17 +1,20 @@
-// #![allow(dead_code, unused_variables)]
+//! TKern
+//!
+//! An experimental kernel
+
 #![feature(lang_items, alloc_error_handler, llvm_asm)]
 #![no_std]
+#![warn(missing_docs)]
 
 extern crate alloc;
 
 #[macro_use]
-mod vga;
-mod allocator;
-mod arch;
-mod memory;
+pub mod vga;
+pub mod allocator;
+pub mod arch;
+pub mod memory;
 
-use crate::memory::{AllocateOptions, Mapper, PhysicalAddress};
-
+/// Entry point of the kernel
 #[no_mangle]
 pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
     vga::set_color(vga::ColorCode::new(
@@ -32,17 +35,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         allocator::init(&boot_info);
         memory::init();
     }
-    let vga_addr = Mapper::access_mut(|mapper| {
-        mapper.map_physical_address(
-            PhysicalAddress(0xb8000),
-            AllocateOptions::WRITABLE | AllocateOptions::USER_ACCESSIBLE,
-        )
-    });
-    unsafe {
-        vga::set_base_address(vga_addr.virtual_address());
-    }
 
-    vga_println!("Hello from relocated VGA!");
     panic!("End of kernel reached");
 }
 

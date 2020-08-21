@@ -1,3 +1,7 @@
+//! Memory mapping.
+//!
+//! See [Mapper] for more information.
+
 mod address;
 mod paging;
 
@@ -10,6 +14,9 @@ use spin::Mutex;
 
 pub(self) const PAGE_SIZE: u64 = 4 * 1024; // 4kb
 
+/// An allocated physical map. This can be obtained by calling [Mapper]'s `map_physical_address`.
+///
+/// When this mapping goes out of scope, it will be deallocated automatically.
 #[derive(Debug)]
 pub struct AllocatedPhysicalPageMapping {
     // The start of the physical address of this page
@@ -23,6 +30,7 @@ pub struct AllocatedPhysicalPageMapping {
 }
 
 impl AllocatedPhysicalPageMapping {
+    /// Get the virtual address of this mapping
     pub fn virtual_address(&self) -> VirtualAddress {
         self.virtual_page_start
     }
@@ -58,8 +66,11 @@ lazy_static! {
 }
 
 bitflags! {
+    /// Options that will be passed to the given memory map. These are used by [Mapper]'s `map_physical_address` method.
     pub struct AllocateOptions : u64 {
+        /// The physical address that is mapped should be able to be written to
         const WRITABLE = 1 << 1;
+        /// The physical address that is mapped should be accessible by a non-kernel user
         const USER_ACCESSIBLE = 1 << 2;
     }
 }
@@ -113,12 +124,21 @@ impl TableUsage {
     }
 }
 
+/// An abstraction around the CPU's MMU.
+/// This can be used to map physical addresses to virtual addresses.
+///
+/// The mapper must be initialized when the kernel starts by calling [init].
+/// Afterwards the mapper can be accessed with the [access_mut](#fn.access_mut) method.
 pub struct Mapper {
     p1_usage: TableUsage,
     p1_table: ActivePageTable,
 }
 
 impl Mapper {
+    /// Map a physical address to a random virtual address.
+    /// This allocation will automatically be deallocated when the returned [AllocatedPhysicalPageMapping] is dropped.
+    ///
+    /// When mapping a physical address that you want to write to, make sure to add `AllocateOptions::WRITABLE`.
     pub fn map_physical_address(
         &mut self,
         physical_address: PhysicalAddress,
@@ -171,6 +191,8 @@ impl Mapper {
     }
     */
 
+    /// Access the memory mapping.
+    /// This is done from within a callback to ensure that the mapper is only access from a single thread and won't be interrupted.
     pub fn access_mut<F, T>(f: F) -> T
     where
         F: FnOnce(&mut Mapper) -> T,

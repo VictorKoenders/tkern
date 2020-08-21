@@ -1,3 +1,8 @@
+//! Allocator module
+//!
+//! This module contains the global allocator for the kernel.
+//! See [init] for more information.
+
 mod bump;
 
 type Inner = self::bump::BumpAllocator;
@@ -11,9 +16,9 @@ fn alloc_error_handler(layout: Layout) -> ! {
 }
 
 #[global_allocator]
-pub static mut ALLOCATOR: Allocator = Allocator::uninit();
+static mut ALLOCATOR: Allocator = Allocator::uninit();
 
-pub struct Allocator {
+struct Allocator {
     inner: Inner,
 }
 
@@ -38,6 +43,13 @@ unsafe impl core::alloc::GlobalAlloc for Allocator {
     }
 }
 
+/// Initialize the allocator. After this, any [alloc] structure can be used in the kernel.
+///
+/// # Safety
+///
+/// This method should be called exactly once, at the start of the kernel.
+///
+/// No memory allocations should occur before calling this method.
 pub unsafe fn init(boot_info: &multiboot2::BootInformation) {
     ALLOCATOR.init(boot_info);
 }

@@ -1,3 +1,7 @@
+//! VGA module
+//!
+//! This module allows the kernel to write to the screen before the actual screen driver is initialized.
+
 use crate::memory::VirtualAddress;
 use core::fmt;
 use lazy_static::lazy_static;
@@ -15,12 +19,19 @@ lazy_static! {
     });
 }
 
+/// Set the base address of the VGA buffer
+///
+/// # Safety
+///
+/// The address must be mapped to physical address `0xB8000`.
+///
+/// The address must stay valid until the next time `set_base_address` is called.
 pub unsafe fn set_base_address(addr: VirtualAddress) {
     WRITER.lock().buffer = &mut *(addr.0 as *mut Buffer);
 }
 
 /// The standard color palette in VGA text mode.
-#[allow(dead_code)]
+#[allow(dead_code, missing_docs)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Color {
@@ -187,10 +198,13 @@ pub fn _print(args: fmt::Arguments) {
     WRITER.lock().write_fmt(args).unwrap();
 }
 
+/// Clear the entire screen.
 pub fn clear() {
     WRITER.lock().clear();
 }
 
+/// Set the color of the VGA printer.
+/// This is a global variable and will apply to all prints, regardless on where the print comes from.
 pub fn set_color(color_code: ColorCode) {
     WRITER.lock().color_code = color_code;
 }

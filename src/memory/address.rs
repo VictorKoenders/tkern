@@ -1,5 +1,9 @@
 use core::fmt;
 
+/// A physical address.
+/// This can be passed to [Mapper]'s `map_physical_address` to be mapped to a virtual address.
+///
+/// Physical addresses cannot be accessed directly without being mapped.
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct PhysicalAddress(pub u64);
 impl fmt::Debug for PhysicalAddress {
@@ -8,6 +12,8 @@ impl fmt::Debug for PhysicalAddress {
     }
 }
 
+/// A virtual address.
+/// This is returned by [Mapper] and can be used to access physical addresses, as well as providing the same virtual address space per application.
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct VirtualAddress(pub u64);
 impl fmt::Debug for VirtualAddress {
@@ -109,6 +115,7 @@ impl VirtualAddress {
     }
 }
 
+/// Generic trait that allows you to read and write from a [VirtualAddress].
 pub trait AddressAccess<T> {
     /// Write to a virtual address
     ///
