@@ -17,6 +17,15 @@ jobs:
         toolchain: nightly
         override: true
         components: rust-src, rustfmt, clippy
+        
+    - name: Install xbuild
+      uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-xbuild
+        version: latest
+
+    - name: Install system dependencies
+      run: sudo apt update && sudo apt install make nasm -y
 
     - name: Build
       run: make all
