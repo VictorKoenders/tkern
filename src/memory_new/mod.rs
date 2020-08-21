@@ -191,7 +191,6 @@ impl Mapper {
 /// [ALLOCATOR]: ../allocator/static.ALLOCATOR.html
 /// [allocator::init]: ../allocator/fn.init.html
 pub unsafe fn init() {
-    debug_assert_eq!(paging::TABLE_PAGE_SIZE, 4096);
     crate::arch::without_interrupts(|| {
         let mut mapper = MAPPER.lock();
         *mapper = Some(Mapper {

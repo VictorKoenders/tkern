@@ -77,7 +77,13 @@ impl TableEntry {
 }
 
 const ENTRY_COUNT: usize = 512;
-pub(super) const TABLE_PAGE_SIZE: usize = core::mem::size_of::<Table<Level1>>();
+pub(super) const TABLE_PAGE_SIZE: usize = 4096;
+
+fn _size_check() {
+    unsafe {
+        core::mem::transmute::<[u8; TABLE_PAGE_SIZE], Table<Level1>>([0u8; TABLE_PAGE_SIZE]);
+    }
+}
 
 pub struct Table<L> {
     entries: [TableEntry; ENTRY_COUNT],
