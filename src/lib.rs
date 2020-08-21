@@ -5,11 +5,10 @@
 extern crate alloc;
 
 #[macro_use]
-pub mod vga;
-pub mod allocator;
-pub mod arch;
-// pub mod memory;
-pub mod memory_new;
+mod vga;
+mod allocator;
+mod arch;
+mod memory_new;
 
 use crate::memory_new::{AllocateOptions, Mapper, PhysicalAddress};
 
@@ -51,7 +50,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
 #[panic_handler]
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
     vga_println!("{}", info);
-    loop {}
+    crate::arch::halt_loop();
 }
 
 #[derive(Debug, Copy, Clone)]

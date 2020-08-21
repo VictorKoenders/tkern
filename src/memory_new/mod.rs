@@ -27,6 +27,7 @@ impl AllocatedPhysicalPageMapping {
         self.virtual_page_start
     }
 
+    /*
     pub fn get_offset(&self, offset: usize) -> Option<VirtualAddress> {
         // if the user requests offset 0x0040,
         // and the base is 0x5000,
@@ -42,6 +43,7 @@ impl AllocatedPhysicalPageMapping {
             Some(VirtualAddress(self.virtual_page_start.0 + total_offset))
         }
     }
+    */
 }
 
 impl Drop for AllocatedPhysicalPageMapping {
@@ -156,14 +158,18 @@ impl Mapper {
 
     fn deallocate(&mut self, mapping: &AllocatedPhysicalPageMapping) {
         self.p1_usage.clear(mapping.virtual_page_start.p1_index());
+        self.p1_table.clear(mapping.virtual_page_start);
+        crate::arch::flush_tlb(mapping.virtual_page_start);
     }
 
+    /*
     pub fn access<F, T>(f: F) -> T
     where
         F: FnOnce(&Mapper) -> T,
     {
         crate::arch::without_interrupts(|| f(MAPPER.lock().as_ref().unwrap()))
     }
+    */
 
     pub fn access_mut<F, T>(f: F) -> T
     where

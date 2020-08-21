@@ -1,5 +1,8 @@
 use crate::memory_new::VirtualAddress;
-use cortex_a::{asm, regs::{RegisterReadWrite, DAIF}};
+use cortex_a::{
+    asm,
+    regs::{RegisterReadWrite, DAIF},
+};
 
 pub fn flush_tlb(address: VirtualAddress) {
     unsafe {
@@ -30,4 +33,3 @@ pub fn halt_loop() -> ! {
         asm::wfi();
     }
 }
-

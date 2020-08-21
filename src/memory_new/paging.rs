@@ -8,6 +8,7 @@ use core::{
 
 bitflags! {
     pub struct EntryFlags: u64 {
+        // Used by the MMU
         const PRESENT =         1 << 0;
         const WRITABLE =        1 << 1;
         const USER_ACCESSIBLE = 1 << 2;
@@ -18,6 +19,10 @@ bitflags! {
         const HUGE_PAGE =       1 << 7;
         const GLOBAL =          1 << 8;
         const NO_EXECUTE =      1 << 63;
+
+        // Freely usable by the kernel
+        // 9-11, 52-62
+        const ALLOCATED =       1 << 9;
     }
 }
 pub struct TableEntry(u64);
@@ -27,9 +32,6 @@ impl TableEntry {
         self.0 == 0
     }
 
-    pub fn set_unused(&mut self) {
-        self.0 = 0;
-    }
     pub fn flags(&self) -> EntryFlags {
         EntryFlags::from_bits_truncate(self.0)
     }
@@ -42,6 +44,20 @@ impl TableEntry {
         );
         self.0 = (address as u64) | flags.bits() | EntryFlags::PRESENT.bits();
     }
+
+    pub fn deallocate(&mut self) {
+        if self.flags().contains(EntryFlags::ALLOCATED) {
+            let ptr = self.0 & 0x000fffff_fffff000;
+            unsafe {
+                alloc::alloc::dealloc(
+                    ptr as *mut _,
+                    core::alloc::Layout::from_size_align(TABLE_PAGE_SIZE, TABLE_PAGE_SIZE).unwrap(),
+                )
+            }
+        }
+        self.0 = 0;
+    }
+
     pub fn create(&mut self, flags: EntryFlags) {
         if self.flags().contains(EntryFlags::PRESENT) {
             vga_println!("Warning: Trying to allocate a paging table entry that is already allocated. Ignoring.");
@@ -53,7 +69,10 @@ impl TableEntry {
             )
         };
         vga_println!("Allocated frame at {:p} with flags {:?}", ptr, flags);
-        self.set(PhysicalAddress(ptr as *mut _ as u64), flags);
+        self.set(
+            PhysicalAddress(ptr as *mut _ as u64),
+            flags | EntryFlags::ALLOCATED,
+        );
     }
 }
 
@@ -63,14 +82,6 @@ pub(super) const TABLE_PAGE_SIZE: usize = core::mem::size_of::<Table<Level1>>();
 pub struct Table<L> {
     entries: [TableEntry; ENTRY_COUNT],
     level: PhantomData<L>,
-}
-
-impl<L> Table<L> {
-    pub fn zero(&mut self) {
-        for entry in self.entries.iter_mut() {
-            entry.set_unused();
-        }
-    }
 }
 
 impl<L> Index<usize> for Table<L> {
@@ -156,7 +167,6 @@ impl<L: HierarchicalLevel> Table<L> {
                 self.entries[index].flags()
             );
             self.entries[index].create(EntryFlags::WRITABLE);
-            self.next_table_mut(index).unwrap().zero();
         }
         self.next_table_mut(index).unwrap()
     }
@@ -191,5 +201,18 @@ impl ActivePageTable {
 
         assert!(p1[virt.p1_index()].is_unused());
         p1[virt.p1_index()].set(physical, options.flags());
+    }
+
+    pub fn clear(&mut self, virt: VirtualAddress) {
+        let entry = self
+            .p4_mut()
+            .next_table_mut(virt.p4_index())
+            .and_then(|p3| p3.next_table_mut(virt.p3_index()))
+            .and_then(|p2| p2.next_table_mut(virt.p2_index()));
+        let entry = match entry {
+            Some(e) => e,
+            None => return,
+        };
+        entry[virt.p1_index()].deallocate();
     }
 }
