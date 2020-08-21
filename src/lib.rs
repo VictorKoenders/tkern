@@ -13,6 +13,9 @@ pub mod vga;
 pub mod allocator;
 pub mod arch;
 pub mod memory;
+pub mod system;
+
+use memory::PhysicalAddress;
 
 /// Entry point of the kernel
 #[no_mangle]
@@ -36,7 +39,39 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         memory::init();
     }
 
+    if let Some(rsdp) = boot_info.rsdp_v2_tag() {
+        vga_println!("Found rsdp v2 at {:p}", rsdp);
+    } else if let Some(rsdp) = boot_info.rsdp_v1_tag() {
+        vga_println!("Found rsdp v1 at {:p}", rsdp);
+
+        let mapping = system::TableAllocator::default();
+        let root = unsafe { mapping.get_table(PhysicalAddress(rsdp.rsdt_address() as u64)) };
+
+        print_table(0, root, &mapping);
+    } else {
+        vga_println!("Could not find rsdp");
+    }
+
     panic!("End of kernel reached");
+}
+
+fn print_table(depth: usize, table: system::Table, allocator: &system::TableAllocator) {
+    let prefix = alloc::string::String::from(' ').repeat(depth);
+    vga_println!(
+        "{}{:?} (payload length: {})",
+        prefix,
+        table.header().signature(),
+        table.header().length,
+    );
+
+    match table {
+        system::Table::Root(r) => {
+            for child in r.entries(allocator) {
+                print_table(depth + 1, child, allocator);
+            }
+        }
+        _ => {}
+    }
 }
 
 #[cfg(not(any(target_os = "linux")))]

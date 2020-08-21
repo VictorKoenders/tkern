@@ -68,7 +68,6 @@ impl TableEntry {
                 core::alloc::Layout::from_size_align(TABLE_PAGE_SIZE, TABLE_PAGE_SIZE).unwrap(),
             )
         };
-        vga_println!("Allocated frame at {:p} with flags {:?}", ptr, flags);
         self.set(
             PhysicalAddress(ptr as *mut _ as u64),
             flags | EntryFlags::ALLOCATED,

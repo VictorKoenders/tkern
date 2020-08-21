@@ -113,6 +113,39 @@ impl VirtualAddress {
 
         val as usize
     }
+
+    /// Read the virtual address and interpret it as type `T`
+    ///
+    /// # Safety
+    ///
+    /// The memory is being interpreted directly. This means that:
+    /// - The address should not be unmapped
+    /// - The data layout should be exactly the same
+    pub unsafe fn deref<T>(&self) -> &T {
+        &*(self.0 as usize as *const T)
+    }
+
+    /// Read the virtual address and interpret it as type `T`.
+    /// This is the same as [deref](#fn.deref), except that the type is not bound to this VirtualAddress.
+    ///
+    /// # Safety
+    ///
+    /// The memory is being interpreted directly. This means that:
+    /// - The address should not be unmapped
+    /// - The data layout should be exactly the same
+    pub unsafe fn deref_leak<'a, T>(&self) -> &'a T {
+        &*(self.0 as usize as *const T)
+    }
+
+    /// Read a slice of memory from this address.
+    /// The data is being copied, so the VirtualAddress can be safely unmapped.
+    ///
+    /// # Safety
+    ///
+    /// The memory address must be mapped and valid.
+    pub unsafe fn read_slice(&mut self, slice: &mut [u8]) {
+        core::ptr::copy(self.0 as *mut u8, slice.as_mut_ptr(), slice.len());
+    }
 }
 
 /// Generic trait that allows you to read and write from a [VirtualAddress].
@@ -143,7 +176,6 @@ macro_rules! implement_address_access_for_virtual_address {
     ($t:ty) => {
         impl AddressAccess<$t> for VirtualAddress {
             unsafe fn write(&mut self, val: $t) {
-                vga_println!("Writing to 0x{:X}", self.0);
                 core::ptr::write_volatile(self.0 as *mut $t, val);
             }
 

@@ -32,7 +32,22 @@ pub struct AllocatedPhysicalPageMapping {
 impl AllocatedPhysicalPageMapping {
     /// Get the virtual address of this mapping
     pub fn virtual_address(&self) -> VirtualAddress {
-        self.virtual_page_start
+        VirtualAddress(self.virtual_page_start.0 + self.page_offset as u64)
+    }
+
+    /// Try to get the virtual address of the given physical address.
+    /// If the physical address exists in this mapping, the relevant [VirtualAddress] is returned.
+    pub fn try_get_virtual_address(&self, address: PhysicalAddress) -> Option<VirtualAddress> {
+        if address.0 < self.physical_page_start.0 {
+            None
+        } else {
+            let offset = address.0 - self.physical_page_start.0;
+            if offset > PAGE_SIZE {
+                None
+            } else {
+                Some(VirtualAddress(self.virtual_page_start.0 + offset))
+            }
+        }
     }
 
     /*
