@@ -8,9 +8,9 @@ extern crate alloc;
 mod vga;
 mod allocator;
 mod arch;
-mod memory_new;
+mod memory;
 
-use crate::memory_new::{AllocateOptions, Mapper, PhysicalAddress};
+use crate::memory::{AllocateOptions, Mapper, PhysicalAddress};
 
 #[no_mangle]
 pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
@@ -30,7 +30,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
 
     unsafe {
         allocator::init(&boot_info);
-        memory_new::init();
+        memory::init();
     }
     let vga_addr = Mapper::access_mut(|mapper| {
         mapper.map_physical_address(

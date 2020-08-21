@@ -46,5 +46,11 @@ build/arch/$(arch)/%.o: arch/$(arch)/%.asm
 	mkdir -p $(shell dirname $@)
 	nasm -felf64 $< -o $@
 
+check:
+	cargo xcheck --target $(target).json
+
+check_watch:
+	watchexec -r -e ".rs,.toml" -- cargo xcheck --target $(target).json
+
 clippy:
 	cargo xclippy --target $(target).json

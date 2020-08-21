@@ -1,4 +1,4 @@
-use crate::memory_new::VirtualAddress;
+use crate::memory::VirtualAddress;
 use x86_64::{
     instructions::{hlt, interrupts::without_interrupts as without_interrupts_inner, tlb},
     VirtAddr,
