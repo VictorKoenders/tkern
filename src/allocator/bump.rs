@@ -94,8 +94,8 @@ impl BumpAllocator {
                 // we're not aligned, update the desired_start to the next valid align
                 let remaining_align = layout.align() - offset_to_last_valid_align;
                 desired_start += remaining_align;
-                debug_assert_eq!(desired_start % layout.align(), 0);
             }
+            debug_assert_eq!(desired_start % layout.align(), 0);
 
             let desired_range = desired_start..desired_start + layout.size();
 

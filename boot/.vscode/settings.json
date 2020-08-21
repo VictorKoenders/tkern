@@ -1,9 +1,0 @@
-{
-    "rust-analyzer.checkOnSave.overrideCommand": [
-        "cargo",
-        "xcheck",
-        "--target",
-        "x86_64-target.json",
-        "--json-output"
-    ]
-}

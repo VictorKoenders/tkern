@@ -1,3 +1,4 @@
+use crate::memory_new::VirtualAddress;
 use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
@@ -12,6 +13,10 @@ lazy_static! {
         color_code: ColorCode::new(Color::Yellow, Color::Black),
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
     });
+}
+
+pub unsafe fn set_base_address(addr: VirtualAddress) {
+    WRITER.lock().buffer = &mut *(addr.0 as *mut Buffer);
 }
 
 /// The standard color palette in VGA text mode.

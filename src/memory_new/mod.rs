@@ -1,13 +1,16 @@
 mod address;
+mod paging;
 
 pub use self::address::{AddressAccess, PhysicalAddress, VirtualAddress};
 
 use bitflags::bitflags;
 use lazy_static::lazy_static;
+use paging::ActivePageTable;
 use spin::Mutex;
 
 pub(self) const PAGE_SIZE: u64 = 4 * 1024; // 4kb
 
+#[derive(Debug)]
 pub struct AllocatedPhysicalPageMapping {
     // The start of the physical address of this page
     physical_page_start: PhysicalAddress,
@@ -20,6 +23,10 @@ pub struct AllocatedPhysicalPageMapping {
 }
 
 impl AllocatedPhysicalPageMapping {
+    pub fn virtual_address(&self) -> VirtualAddress {
+        self.virtual_page_start
+    }
+
     pub fn get_offset(&self, offset: usize) -> Option<VirtualAddress> {
         // if the user requests offset 0x0040,
         // and the base is 0x5000,
@@ -52,6 +59,19 @@ bitflags! {
     pub struct AllocateOptions : u64 {
         const WRITABLE = 1 << 1;
         const USER_ACCESSIBLE = 1 << 2;
+    }
+}
+
+impl AllocateOptions {
+    pub(self) fn flags(self) -> paging::EntryFlags {
+        let mut flags = paging::EntryFlags::empty();
+        if self.contains(AllocateOptions::WRITABLE) {
+            flags |= paging::EntryFlags::WRITABLE;
+        }
+        if self.contains(AllocateOptions::USER_ACCESSIBLE) {
+            flags |= paging::EntryFlags::USER_ACCESSIBLE;
+        }
+        flags
     }
 }
 
@@ -93,6 +113,7 @@ impl TableUsage {
 
 pub struct Mapper {
     p1_usage: TableUsage,
+    p1_table: ActivePageTable,
 }
 
 impl Mapper {
@@ -111,7 +132,8 @@ impl Mapper {
         let virtual_page_start = self.find_available_virtual_address();
         self.p1_usage.set(virtual_page_start.p1_index());
 
-        todo!("Actually map the page");
+        self.p1_table
+            .allocate_virtual_address(physical_page_start, virtual_page_start, options);
 
         AllocatedPhysicalPageMapping {
             physical_page_start,
@@ -121,7 +143,7 @@ impl Mapper {
     }
 
     fn find_available_virtual_address(&mut self) -> VirtualAddress {
-        let p4_index = 0;
+        let p4_index = 42;
         let p3_index = 0;
         let p2_index = 0;
         let p1_index = self
@@ -163,10 +185,12 @@ impl Mapper {
 /// [ALLOCATOR]: ../allocator/static.ALLOCATOR.html
 /// [allocator::init]: ../allocator/fn.init.html
 pub unsafe fn init() {
+    debug_assert_eq!(paging::TABLE_PAGE_SIZE, 4096);
     crate::arch::without_interrupts(|| {
         let mut mapper = MAPPER.lock();
         *mapper = Some(Mapper {
             p1_usage: TableUsage::default(),
+            p1_table: ActivePageTable::new(),
         });
     });
 }

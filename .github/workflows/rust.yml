@@ -3,43 +3,6 @@ on: [push, pull_request]
 name: Rust
 
 jobs:
-  test_x86_64:
-    name: Test x86_64
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout sources
-      uses: actions/checkout@v2
-
-    - name: Install rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: nightly
-        override: true
-        components: rust-src, llvm-tools-preview
-
-    - name: Install xbuild
-      uses: actions-rs/install@v0.1
-      with:
-        crate: cargo-xbuild
-        version: latest
-    
-    - name: Install qemu
-      run: sudo apt update && sudo apt install qemu -y
-
-    - name: Install bootimage
-      uses: actions-rs/install@v0.1
-      with:
-        crate: bootimage
-        version: latest
-
-    - name: Run tests
-      uses: actions-rs/cargo@v1
-      with:
-        command: xtest
-        args: --verbose
-
-
   lint:
     name: Linter pass
     runs-on: ubuntu-latest
@@ -54,18 +17,9 @@ jobs:
         toolchain: nightly
         override: true
         components: rust-src, rustfmt, clippy
-        
-    - name: Install xbuild
-      uses: actions-rs/install@v0.1
-      with:
-        crate: cargo-xbuild
-        version: latest
 
-    - name: Cargo xbuild
-      uses: actions-rs/cargo@v1
-      with:
-        command: xclippy
-        args: -- -D warnings
+    - name: Build
+      run: make all
 
     - name: Run cargo fmt
       uses: actions-rs/cargo@v1

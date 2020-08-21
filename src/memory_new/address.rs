@@ -1,5 +1,20 @@
+use core::fmt;
+
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct PhysicalAddress(pub u64);
+impl fmt::Debug for PhysicalAddress {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "Physical(0x{:X})", self.0)
+    }
+}
+
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct VirtualAddress(pub u64);
+impl fmt::Debug for VirtualAddress {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "Virtual(0x{:X})", self.0)
+    }
+}
 
 impl VirtualAddress {
     pub(super) fn from_paging_indices(
@@ -53,9 +68,42 @@ impl VirtualAddress {
         // eeeeeeee_eeeeeeee_44444444_43333333_33222222_22211111_1111oooo_oooooooo
         // see `from_paging_indices` for a full explanation
 
-        const MASK: u64 = 0b00011111_11110000_00000000;
+        const MASK: u64 = 0b1_11111111;
         const OFFSET: u64 = 12;
-        let val = (self.0 & MASK) >> OFFSET;
+        let val = (self.0 >> OFFSET) & MASK;
+
+        val as usize
+    }
+    pub(super) fn p2_index(&self) -> usize {
+        // A virtual address is mapped as:
+        // eeeeeeee_eeeeeeee_44444444_43333333_33222222_22211111_1111oooo_oooooooo
+        // see `from_paging_indices` for a full explanation
+
+        const MASK: u64 = 0b1_11111111;
+        const OFFSET: u64 = 21;
+        let val = (self.0 >> OFFSET) & MASK;
+
+        val as usize
+    }
+    pub(super) fn p3_index(&self) -> usize {
+        // A virtual address is mapped as:
+        // eeeeeeee_eeeeeeee_44444444_43333333_33222222_22211111_1111oooo_oooooooo
+        // see `from_paging_indices` for a full explanation
+
+        const MASK: u64 = 0b1_11111111;
+        const OFFSET: u64 = 30;
+        let val = (self.0 >> OFFSET) & MASK;
+
+        val as usize
+    }
+    pub(super) fn p4_index(&self) -> usize {
+        // A virtual address is mapped as:
+        // eeeeeeee_eeeeeeee_44444444_43333333_33222222_22211111_1111oooo_oooooooo
+        // see `from_paging_indices` for a full explanation
+
+        const MASK: u64 = 0b1_11111111;
+        const OFFSET: u64 = 39;
+        let val = (self.0 >> OFFSET) & MASK;
 
         val as usize
     }
@@ -88,6 +136,7 @@ macro_rules! implement_address_access_for_virtual_address {
     ($t:ty) => {
         impl AddressAccess<$t> for VirtualAddress {
             unsafe fn write(&mut self, val: $t) {
+                vga_println!("Writing to 0x{:X}", self.0);
                 core::ptr::write_volatile(self.0 as *mut $t, val);
             }
 
