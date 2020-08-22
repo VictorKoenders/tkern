@@ -25,13 +25,21 @@ impl TableAllocator {
     pub unsafe fn get_table(&self, address: PhysicalAddress) -> Table {
         let addr = self.get_mapping_for_physical_address(address);
         let header = addr.deref_leak::<Header>();
-        match &header.signature {
+        let table = match &header.signature {
             b"RSDT" => Table::Root(addr.deref_leak()),
             b"FACP" if header.length == FadtV1::LENGTH => Table::FadtV1(addr.deref_leak()),
             b"APIC" => Table::Madt(addr.deref_leak::<Madt>()),
-            //b"HPET" => Table::HighPerformanceEvent(addr.deref_leak::<HPET>()),
+            b"HPET" => Table::Hpet(addr.deref_leak::<Hpet>()),
             _ => Table::Unknown(header),
-        }
+        };
+
+        assert!(table.header().is_valid(), "Table {:?} is not valid", table);
+        vga_println!(
+            "{:?}: {}",
+            table.header().signature(),
+            table.header().length
+        );
+        table
     }
 
     pub(super) unsafe fn get_table_known_type<T>(&self, address: PhysicalAddress) -> &T {

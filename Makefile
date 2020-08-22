@@ -4,6 +4,7 @@ iso := build/kernel-$(arch).iso
 target ?= $(arch)-target
 opt_level ?= debug
 rust_os := target/$(target)/${opt_level}/libtkern.a
+hdd_img := build/hdd.img
 
 linker_script := arch/$(arch)/linker.ld
 grub_cfg := arch/$(arch)/grub.cfg
@@ -18,8 +19,8 @@ all: $(kernel)
 clean:
 	rm -r build target
 
-run: $(iso)
-	qemu-system-x86_64 -cdrom $(iso) -m 5G
+run: $(iso) $(hdd_img)
+	qemu-system-x86_64 -cdrom $(iso) -m 5G -smp 4 -drive file=$(hdd_img),format=raw -boot d -vga qxl
 
 iso: $(iso)
 
@@ -29,6 +30,9 @@ $(iso): $(kernel) $(grub_cfg)
 	cp $(grub_cfg) build/isofiles/boot/grub
 	grub-mkrescue -o $(iso) build/isofiles
 	rm -r build/isofiles
+
+$(hdd_img):
+	qemu-img create -f raw $(hdd_img) 4G
 
 $(kernel): kernel $(rust_os) $(assembly_object_files) $(linker_script)
 	ld -n --gc-sections -T $(linker_script) -o $(kernel) \

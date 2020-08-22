@@ -40,52 +40,17 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         memory::init();
     }
 
-    if let Some(rsdp) = boot_info.rsdp_v2_tag() {
-        vga_println!("Found rsdp v2 at {:p}", rsdp);
+    let _system = if let Some(rsdp) = boot_info.rsdp_v2_tag() {
+        vga_println!("RSDP V2 at {:p}", rsdp);
+        unimplemented!()
     } else if let Some(rsdp) = boot_info.rsdp_v1_tag() {
-        vga_println!("Found rsdp v1 at {:p}", rsdp);
-
-        let mapping = system::TableAllocator::default();
-        let root = unsafe { mapping.get_table(PhysicalAddress(rsdp.rsdt_address() as u64)) };
-
-        print_table(0, root, &mapping);
-        vga_println!(
-            "system::TableAllocator allocated {} frames",
-            mapping.allocation_count()
-        );
+        vga_println!("RSDP V1 at {:p}", rsdp);
+        unsafe { system::System::scan(PhysicalAddress(rsdp.rsdt_address() as u64)) }
     } else {
-        vga_println!("Could not find rsdp");
-    }
+        panic!("Could not find rsdp, aborting");
+    };
 
     panic!("End of kernel reached");
-}
-
-fn print_table(depth: usize, table: system::Table, allocator: &system::TableAllocator) {
-    let prefix = alloc::string::String::from(' ').repeat(depth);
-    vga_println!("{}{}", prefix, table.name());
-
-    match table {
-        system::Table::Root(r) => {
-            for child in r.entries(allocator) {
-                print_table(depth + 1, child, allocator);
-            }
-        }
-        system::Table::FadtV1(_fadt) => {
-            //let dsdt = fadt.dsdt(allocator);
-            //vga_println!("{} {:?}", prefix, dsdt);
-        }
-        system::Table::Madt(madt) => {
-            for device in madt.interrupt_devices(allocator) {
-                vga_println!("{} {:?}", prefix, device);
-            }
-
-            let apic = madt.apic(allocator);
-            vga_println!("{} {:?}", prefix, apic);
-        }
-        system::Table::Unknown(_h) => {
-            panic!("Unknown header");
-        }
-    }
 }
 
 #[cfg(not(any(target_os = "linux")))]

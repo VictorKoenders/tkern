@@ -107,9 +107,12 @@ pub enum InterruptDevice<'a> {
 #[repr(packed)]
 #[derive(Debug, Copy, Clone)]
 pub struct ProcessorLocalApic {
-    processor_id: u8,
+    /// The ID of the processor
+    pub processor_id: u8,
     apic_id: u8,
-    flags: u32,
+
+    /// The flags of the processor
+    pub flags: ProcessorFlags,
 }
 
 /// Contains information about device IO
@@ -147,4 +150,14 @@ pub struct NonMaskableInterrupts {
 pub struct Apic {
     /// Common SDT header
     pub header: Header,
+}
+
+bitflags::bitflags! {
+    /// CPU flags
+    pub struct ProcessorFlags : u32 {
+        /// The CPU is enabled
+        const ENABLED = 1<<0;
+        /// The CPU can be enabled
+        const CAN_BE_ENABLED = 1<<1;
+    }
 }

@@ -19,10 +19,7 @@ fn _test_size() {
 
 impl RSDT {
     /// Get the child entries of this root descriptor table
-    pub fn entries<'a>(
-        &'a self,
-        allocator: &'a TableAllocator,
-    ) -> impl Iterator<Item = Table> + 'a {
+    pub fn entries<'a>(&'a self, allocator: &'a TableAllocator) -> impl Iterator<Item = Table<'a>> {
         let entries = unsafe {
             let ptr = self.header.ptr_after_header() as *const u32;
             let len = self.header.bytes_len_after_header() / 4;
