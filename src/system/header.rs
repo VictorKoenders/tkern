@@ -1,8 +1,10 @@
+use crate::memory::VirtualAddress;
+
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 /// The common header of any System Descriptor Table
 pub struct Header {
-    signature: [u8; 4],
+    pub(super) signature: [u8; 4],
     /// The length of the header in bytes. This includes the header itself
     pub length: u32,
     /// The revision of this System function
@@ -16,6 +18,12 @@ pub struct Header {
     pub creator_id: u32,
     /// The creator revision
     pub creator_revision: u32,
+}
+
+fn _test_size() {
+    unsafe {
+        core::mem::transmute::<[u8; 36], Header>([0u8; 36]);
+    }
 }
 
 impl Header {
@@ -51,5 +59,11 @@ impl Header {
 
     pub(super) fn ptr_after_header(&self) -> *const u8 {
         ((self as *const Header as usize) + core::mem::size_of::<Header>()) as *const u8
+    }
+
+    pub(super) fn virtual_address_range(&self) -> core::ops::Range<VirtualAddress> {
+        let start = VirtualAddress(self as *const Header as usize as u64);
+        let end = VirtualAddress(start.0 + self.length as u64);
+        start..end
     }
 }

@@ -4,11 +4,17 @@ use crate::memory::PhysicalAddress;
 /// The root system descriptor table. This is used to be a list of child tables.
 ///
 /// https://wiki.osdev.org/RSDT
-#[repr(C)]
-#[derive(Debug)]
+#[repr(packed)]
+#[derive(Debug, Copy, Clone)]
 pub struct RSDT {
     /// The common header of all system descriptor tables
     pub header: Header,
+}
+
+fn _test_size() {
+    unsafe {
+        core::mem::transmute::<[u8; 36], RSDT>([0u8; 36]);
+    }
 }
 
 impl RSDT {

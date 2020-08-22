@@ -14,6 +14,7 @@ pub mod allocator;
 pub mod arch;
 pub mod memory;
 pub mod system;
+pub mod utils;
 
 use memory::PhysicalAddress;
 
@@ -48,6 +49,10 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         let root = unsafe { mapping.get_table(PhysicalAddress(rsdp.rsdt_address() as u64)) };
 
         print_table(0, root, &mapping);
+        vga_println!(
+            "system::TableAllocator allocated {} frames",
+            mapping.allocation_count()
+        );
     } else {
         vga_println!("Could not find rsdp");
     }
@@ -57,12 +62,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
 
 fn print_table(depth: usize, table: system::Table, allocator: &system::TableAllocator) {
     let prefix = alloc::string::String::from(' ').repeat(depth);
-    vga_println!(
-        "{}{:?} (payload length: {})",
-        prefix,
-        table.header().signature(),
-        table.header().length,
-    );
+    vga_println!("{}{}", prefix, table.name());
 
     match table {
         system::Table::Root(r) => {
@@ -70,7 +70,21 @@ fn print_table(depth: usize, table: system::Table, allocator: &system::TableAllo
                 print_table(depth + 1, child, allocator);
             }
         }
-        _ => {}
+        system::Table::FadtV1(_fadt) => {
+            //let dsdt = fadt.dsdt(allocator);
+            //vga_println!("{} {:?}", prefix, dsdt);
+        }
+        system::Table::Madt(madt) => {
+            for device in madt.interrupt_devices(allocator) {
+                vga_println!("{} {:?}", prefix, device);
+            }
+
+            let apic = madt.apic(allocator);
+            vga_println!("{} {:?}", prefix, apic);
+        }
+        system::Table::Unknown(_h) => {
+            panic!("Unknown header");
+        }
     }
 }
 
