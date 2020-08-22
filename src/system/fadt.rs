@@ -1,9 +1,13 @@
 use super::{Dsdt, Header};
 use crate::memory::PhysicalAddress;
 
+/// FADT V1 struct. Contains information about fixed register blocks.
+///
+/// https://wiki.osdev.org/FADT
 #[repr(packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct V1 {
+    /// Common SDT header
     pub header: Header,
     facs_address: u32,
     dsdt_address: u32,
@@ -46,8 +50,10 @@ pub struct V1 {
 }
 
 impl V1 {
+    /// The length of the FADT V1 struct
     pub const LENGTH: u32 = core::mem::size_of::<V1>() as u32;
 
+    /// Get the DSDT table for this FADT entry
     pub fn dsdt<'a>(&self, allocator: &'a super::TableAllocator) -> &'a Dsdt {
         unsafe { allocator.get_table_known_type(PhysicalAddress(self.dsdt_address as u64)) }
     }

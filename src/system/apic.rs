@@ -1,21 +1,27 @@
 use super::{Header, TableAllocator};
 use crate::{memory::PhysicalAddress, utils::slice::SliceUtils};
 
+/// MADT describes all of the interrupt controllers in the system.
+///
+/// https://wiki.osdev.org/MADT
 #[repr(packed)]
 #[derive(Debug, Copy, Clone)]
 pub struct Madt {
+    /// Common header
     pub header: Header,
-    pub apic_address: u32,
-    pub flags: u32,
+    apic_address: u32,
+    flags: u32,
 }
 
 impl Madt {
+    /// Load the local APIC struct
     pub fn apic<'a>(&self, allocator: &'a TableAllocator) -> &'a Apic {
         let addr =
             allocator.get_mapping_for_physical_address(PhysicalAddress(self.apic_address as u64));
         unsafe { addr.deref_leak() }
     }
 
+    /// Iterates over the devices in the MADT table
     pub fn interrupt_devices(&self, allocator: &TableAllocator) -> InterruptDeviceIterator {
         allocator.ensure_loaded(unsafe { self.header.virtual_address_range() });
         let end_of_madt = self as *const Madt as usize + core::mem::size_of::<Madt>();
@@ -26,6 +32,7 @@ impl Madt {
     }
 }
 
+/// Iterator that iterates over the devices in the MADT table
 pub struct InterruptDeviceIterator<'a> {
     slice: &'a [u8],
 }
@@ -79,25 +86,35 @@ impl<'a> Iterator for InterruptDeviceIterator<'a> {
     }
 }
 
+/// Collection of APIC entries that can exist in the MADT table.
 #[derive(Debug)]
 pub enum InterruptDevice<'a> {
+    /// Information about the available processor
     ProcessorLocal(&'a ProcessorLocalApic),
+    /// Information about the available IO
     Io(&'a IoApic),
+    /// Information about the available overrides for interrupt sources
     InterruptSourceOverride(&'a InterruptSourceOverride),
+    /// Information about the non-maskable interrupts (NMI)
     NonMaskableInterrupts(&'a NonMaskableInterrupts),
-    Unknown { device_type: u8, data: &'a [u8] },
+    Unknown {
+        device_type: u8,
+        data: &'a [u8],
+    },
 }
 
+/// Contains information about the available CPUs
 #[repr(packed)]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct ProcessorLocalApic {
     processor_id: u8,
     apic_id: u8,
     flags: u32,
 }
 
+/// Contains information about device IO
 #[repr(packed)]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct IoApic {
     id: u8,
     reserved: u8,
@@ -105,24 +122,29 @@ pub struct IoApic {
     global_system_interrupt_base: u32,
 }
 
+/// Contains information about overrides for interrupt sources
 #[repr(packed)]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct InterruptSourceOverride {
     bus_source: u8,
     irq_source: u8,
     global_system_interrupt: u32,
     flags: u16,
 }
+
+/// Contains information about NonMaskable Interrupts (NMI)
 #[repr(packed)]
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct NonMaskableInterrupts {
     processor_id: u8,
     flags: u16,
     lint: u8,
 }
 
+/// Local APIC struct. Not implemented yet.
 #[repr(packed)]
 #[derive(Debug, Copy, Clone)]
 pub struct Apic {
+    /// Common SDT header
     pub header: Header,
 }

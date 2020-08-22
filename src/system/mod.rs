@@ -59,6 +59,7 @@ impl<'a> Table<'a> {
         }
     }
 
+    /// Get the name of the table, or the signature if this is an `Unknown` table
     pub fn name(&self) -> &str {
         match self {
             Self::Root(_) => "RSDT",

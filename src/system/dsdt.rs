@@ -1,13 +1,16 @@
 use super::{Header, TableAllocator};
 use crate::memory::{PhysicalAddress, VirtualAddress, PAGE_SIZE};
 
+/// The DSDT table, contains AML code for drivers
 #[repr(packed)]
 #[derive(Debug, Copy, Clone)]
 pub struct Dsdt {
+    /// Common SDT header
     pub header: Header,
 }
 
 impl Dsdt {
+    /// Read the AML code from memory
     pub fn read<'a>(&self, allocator: &'a TableAllocator) -> &'a [u8] {
         let len = unsafe { self.header.bytes_len_after_header() };
         let ptr = unsafe { self.header.ptr_after_header() };

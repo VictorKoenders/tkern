@@ -39,6 +39,9 @@ impl TableAllocator {
         addr.deref_leak::<T>()
     }
 
+    /// Get the mapping that is associated with the given virtual address.
+    ///
+    /// Will panic if the given address is not mapped.
     pub fn with_mapping_for_address<T>(
         &self,
         address: VirtualAddress,
@@ -52,6 +55,7 @@ impl TableAllocator {
         }
     }
 
+    /// Get the virtual address for the given physical address
     pub fn get_mapping_for_physical_address(&self, address: PhysicalAddress) -> VirtualAddress {
         let mut borrow = self.allocs.borrow_mut();
         for alloc in borrow.iter() {
@@ -65,10 +69,12 @@ impl TableAllocator {
         borrow.last().unwrap().virtual_address()
     }
 
+    /// Get the amount of allocations that this allocator has done
     pub fn allocation_count(&self) -> usize {
         self.allocs.borrow().len()
     }
 
+    /// Ensure the given range of virtual addresses is loaded
     pub fn ensure_loaded(&self, range: core::ops::Range<VirtualAddress>) {
         let allocs = self.allocs.borrow_mut();
 

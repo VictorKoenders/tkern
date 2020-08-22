@@ -12,6 +12,7 @@ use lazy_static::lazy_static;
 use paging::ActivePageTable;
 use spin::Mutex;
 
+/// MMU page size, 4 KB
 pub const PAGE_SIZE: u64 = 4 * 1024; // 4kb
 
 /// An allocated physical map. This can be obtained by calling [Mapper]'s `map_physical_address`.
