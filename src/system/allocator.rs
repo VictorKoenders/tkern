@@ -34,11 +34,6 @@ impl TableAllocator {
         };
 
         assert!(table.header().is_valid(), "Table {:?} is not valid", table);
-        vga_println!(
-            "{:?}: {}",
-            table.header().signature(),
-            table.header().length
-        );
         table
     }
 

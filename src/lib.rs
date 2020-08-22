@@ -44,8 +44,9 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         vga_println!("RSDP V2 at {:p}", rsdp);
         unimplemented!()
     } else if let Some(rsdp) = boot_info.rsdp_v1_tag() {
-        vga_println!("RSDP V1 at {:p}", rsdp);
-        unsafe { system::System::scan(PhysicalAddress(rsdp.rsdt_address() as u64)) }
+        let addr = PhysicalAddress(rsdp.rsdt_address() as u64);
+        vga_println!("RSDP V1 at {:?}", addr);
+        unsafe { system::System::scan(addr) }
     } else {
         panic!("Could not find rsdp, aborting");
     };

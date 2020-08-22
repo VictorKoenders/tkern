@@ -114,6 +114,11 @@ impl VirtualAddress {
         val as usize
     }
 
+    /// Get the virtual address that a reference is at
+    pub fn from_ref<T>(t: &T) -> Self {
+        Self(t as *const T as usize as u64)
+    }
+
     /// Read the virtual address and interpret it as type `T`
     ///
     /// # Safety

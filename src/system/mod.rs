@@ -13,7 +13,7 @@
 //! // tables and their entries are valid as long as TableAllocator exists
 //! ```
 
-use crate::memory::PhysicalAddress;
+use crate::memory::{PhysicalAddress, VirtualAddress};
 use alloc::vec::Vec;
 use apic::ProcessorLocalApic;
 
@@ -175,9 +175,12 @@ impl<'a> PartialSystem<'a> {
         match table {
             Table::Root(rsdt) => {
                 if self.rsdt.is_none() {
-                    vga_println!("RSDT    at {:p}", rsdt);
+                    vga_println!("RSDT    at {:?}", VirtualAddress::from_ref(rsdt));
                 } else {
-                    vga_println!("[WARN] Second RSDT at {:p}, overwriting", rsdt)
+                    vga_println!(
+                        "[WARN] Second RSDT at {:?}, overwriting",
+                        VirtualAddress::from_ref(rsdt)
+                    );
                 }
                 self.rsdt = Some(rsdt);
                 for child in rsdt.entries(self.allocator) {
@@ -186,9 +189,12 @@ impl<'a> PartialSystem<'a> {
             }
             Table::Madt(madt) => {
                 if self.madt.is_none() {
-                    vga_println!("MADT    at {:p}", madt);
+                    vga_println!("MADT    at {:?}", VirtualAddress::from_ref(madt));
                 } else {
-                    vga_println!("[WARN] Second MADT at {:p}, overwriting", madt)
+                    vga_println!(
+                        "[WARN] Second MADT at {:?}, overwriting",
+                        VirtualAddress::from_ref(madt)
+                    );
                 }
                 self.madt = Some(madt);
                 let processors = madt
@@ -203,18 +209,24 @@ impl<'a> PartialSystem<'a> {
             }
             Table::FadtV1(fadt_v1) => {
                 if self.fadt.is_none() {
-                    vga_println!("FADT V1 at {:p}", fadt_v1);
+                    vga_println!("FADT V1 at {:?}", VirtualAddress::from_ref(fadt_v1));
                 } else {
-                    vga_println!("[WARN] Second FADT V1 at {:p}, overwriting", fadt_v1)
+                    vga_println!(
+                        "[WARN] Second FADT V1 at {:?}, overwriting",
+                        VirtualAddress::from_ref(fadt_v1)
+                    );
                 }
                 self.dsdt = Some(fadt_v1.dsdt(self.allocator).read(self.allocator));
                 self.fadt = Some(fadt_v1);
             }
             Table::Hpet(hpet) => {
                 if self.hpet.is_none() {
-                    vga_println!("HPET    at {:p}", hpet);
+                    vga_println!("HPET    at {:?}", VirtualAddress::from_ref(hpet));
                 } else {
-                    vga_println!("[WARN] Second HPET at {:p}, overwriting", hpet)
+                    vga_println!(
+                        "[WARN] Second HPET at {:?}, overwriting",
+                        VirtualAddress::from_ref(hpet)
+                    );
                 }
                 self.hpet = Some(hpet);
             }
