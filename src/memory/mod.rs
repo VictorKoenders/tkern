@@ -12,7 +12,8 @@ use lazy_static::lazy_static;
 use paging::ActivePageTable;
 use spin::Mutex;
 
-pub(self) const PAGE_SIZE: u64 = 4 * 1024; // 4kb
+/// MMU page size, 4 KB
+pub const PAGE_SIZE: u64 = 4 * 1024; // 4kb
 
 /// An allocated physical map. This can be obtained by calling [Mapper]'s `map_physical_address`.
 ///
@@ -30,9 +31,39 @@ pub struct AllocatedPhysicalPageMapping {
 }
 
 impl AllocatedPhysicalPageMapping {
+    /// Get the physical address of this mapping
+    pub fn physical_address(&self) -> PhysicalAddress {
+        self.physical_page_start
+    }
+
+    /// Get the last virtual address that is valid for this mapping
+    pub fn last_virtual_address(&self) -> VirtualAddress {
+        VirtualAddress(self.virtual_page_start.0 + PAGE_SIZE - 1)
+    }
+
     /// Get the virtual address of this mapping
     pub fn virtual_address(&self) -> VirtualAddress {
-        self.virtual_page_start
+        VirtualAddress(self.virtual_page_start.0 + self.page_offset as u64)
+    }
+
+    /// Returns `true` if this mapping contains the given virtual address
+    pub fn contains(&self, address: VirtualAddress) -> bool {
+        self.virtual_page_start.0 <= address.0 && self.virtual_page_start.0 + PAGE_SIZE > address.0
+    }
+
+    /// Try to get the virtual address of the given physical address.
+    /// If the physical address exists in this mapping, the relevant [VirtualAddress] is returned.
+    pub fn try_get_virtual_address(&self, address: PhysicalAddress) -> Option<VirtualAddress> {
+        if address.0 < self.physical_page_start.0 {
+            None
+        } else {
+            let offset = address.0 - self.physical_page_start.0;
+            if offset > PAGE_SIZE {
+                None
+            } else {
+                Some(VirtualAddress(self.virtual_page_start.0 + offset))
+            }
+        }
     }
 
     /*

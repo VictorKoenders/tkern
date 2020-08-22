@@ -13,6 +13,10 @@ pub mod vga;
 pub mod allocator;
 pub mod arch;
 pub mod memory;
+pub mod system;
+pub mod utils;
+
+use memory::PhysicalAddress;
 
 /// Entry point of the kernel
 #[no_mangle]
@@ -35,6 +39,16 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         allocator::init(&boot_info);
         memory::init();
     }
+
+    let _system = if let Some(rsdp) = boot_info.rsdp_v2_tag() {
+        vga_println!("RSDP V2 at {:p}", rsdp);
+        unimplemented!()
+    } else if let Some(rsdp) = boot_info.rsdp_v1_tag() {
+        vga_println!("RSDP V1 at {:p}", rsdp);
+        unsafe { system::System::scan(PhysicalAddress(rsdp.rsdt_address() as u64)) }
+    } else {
+        panic!("Could not find rsdp, aborting");
+    };
 
     panic!("End of kernel reached");
 }
