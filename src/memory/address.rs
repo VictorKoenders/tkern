@@ -4,6 +4,8 @@ use core::fmt;
 /// This can be passed to [Mapper]'s `map_physical_address` to be mapped to a virtual address.
 ///
 /// Physical addresses cannot be accessed directly without being mapped.
+///
+/// [Mapper]: struct.Mapper.html
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct PhysicalAddress(pub u64);
 impl fmt::Debug for PhysicalAddress {
@@ -14,6 +16,8 @@ impl fmt::Debug for PhysicalAddress {
 
 /// A virtual address.
 /// This is returned by [Mapper] and can be used to access physical addresses, as well as providing the same virtual address space per application.
+///
+/// [Mapper]: struct.Mapper.html
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct VirtualAddress(pub u64);
 impl fmt::Debug for VirtualAddress {

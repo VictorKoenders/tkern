@@ -2,7 +2,7 @@
 //!
 //! This module allows the kernel to write to the screen before the actual screen driver is initialized.
 
-use crate::memory::VirtualAddress;
+use crate::{arch::interrupts::without_interrupts, memory::VirtualAddress};
 use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
@@ -16,20 +16,9 @@ lazy_static! {
         column_position: 0,
         color_code: ColorCode::new(Color::Yellow, Color::Black),
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
+        lines_written_count: 0
     });
 }
-
-/// Set the base address of the VGA buffer
-///
-/// # Safety
-///
-/// The address must be mapped to physical address `0xB8000`.
-///
-/// The address must stay valid until the next time `set_base_address` is called.
-pub unsafe fn set_base_address(addr: VirtualAddress) {
-    WRITER.lock().buffer = &mut *(addr.0 as *mut Buffer);
-}
-
 /// The standard color palette in VGA text mode.
 #[allow(dead_code, missing_docs)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -92,6 +81,7 @@ pub struct Writer {
     column_position: usize,
     color_code: ColorCode,
     buffer: &'static mut Buffer,
+    lines_written_count: usize,
 }
 
 impl Writer {
@@ -145,6 +135,7 @@ impl Writer {
         }
         self.clear_row(BUFFER_HEIGHT - 1);
         self.column_position = 0;
+        self.lines_written_count += 1;
     }
 
     /// Clears a row by overwriting it with blank characters.
@@ -194,17 +185,37 @@ macro_rules! vga_println {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    // interrupts::without_interrupts(|| WRITER.lock().write_fmt(args)).unwrap();
-    WRITER.lock().write_fmt(args).unwrap();
+    let should_lock = without_interrupts(|| {
+        let mut lock = WRITER.lock();
+        lock.write_fmt(args)
+            .map(|_| lock.lines_written_count >= BUFFER_HEIGHT)
+    })
+    .unwrap();
+
+    if should_lock {
+        crate::interrupts::wait_for_enter();
+        without_interrupts(|| WRITER.lock().lines_written_count = 0);
+    }
 }
 
 /// Clear the entire screen.
 pub fn clear() {
-    WRITER.lock().clear();
+    without_interrupts(|| WRITER.lock().clear());
 }
 
 /// Set the color of the VGA printer.
 /// This is a global variable and will apply to all prints, regardless on where the print comes from.
 pub fn set_color(color_code: ColorCode) {
-    WRITER.lock().color_code = color_code;
+    without_interrupts(|| WRITER.lock().color_code = color_code);
+}
+
+/// Set the base address of the VGA buffer
+///
+/// # Safety
+///
+/// The address must be mapped to physical address `0xB8000`.
+///
+/// The address must stay valid until the next time `set_base_address` is called.
+pub unsafe fn set_base_address(addr: VirtualAddress) {
+    without_interrupts(|| WRITER.lock().buffer = &mut *(addr.0 as *mut Buffer));
 }

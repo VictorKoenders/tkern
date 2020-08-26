@@ -13,6 +13,8 @@
 //! // tables and their entries are valid as long as TableAllocator exists
 //! ```
 
+pub mod pci;
+
 use crate::memory::{PhysicalAddress, VirtualAddress};
 use alloc::vec::Vec;
 use apic::ProcessorLocalApic;

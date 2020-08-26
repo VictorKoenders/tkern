@@ -228,7 +228,7 @@ impl Mapper {
     where
         F: FnOnce(&mut Mapper) -> T,
     {
-        crate::arch::without_interrupts(|| f(MAPPER.lock().as_mut().unwrap()))
+        crate::arch::interrupts::without_interrupts(|| f(MAPPER.lock().as_mut().unwrap()))
     }
 }
 
@@ -244,7 +244,7 @@ impl Mapper {
 /// [ALLOCATOR]: ../allocator/static.ALLOCATOR.html
 /// [allocator::init]: ../allocator/fn.init.html
 pub unsafe fn init() {
-    crate::arch::without_interrupts(|| {
+    crate::arch::interrupts::without_interrupts(|| {
         let mut mapper = MAPPER.lock();
         *mapper = Some(Mapper {
             p1_usage: TableUsage::default(),

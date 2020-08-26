@@ -2,7 +2,7 @@
 //!
 //! An experimental kernel
 
-#![feature(lang_items, alloc_error_handler, llvm_asm)]
+#![feature(lang_items, alloc_error_handler, llvm_asm, abi_x86_interrupt)]
 #![no_std]
 #![warn(missing_docs)]
 
@@ -12,6 +12,8 @@ extern crate alloc;
 pub mod vga;
 pub mod allocator;
 pub mod arch;
+pub mod dev_utils;
+pub mod interrupts;
 pub mod memory;
 pub mod system;
 pub mod utils;
@@ -26,6 +28,8 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         vga::Color::Black,
     ));
     vga::clear();
+
+    arch::interrupts::init();
 
     vga_println!("TKern {}", env!("CARGO_PKG_VERSION"));
 
@@ -50,6 +54,13 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
     } else {
         panic!("Could not find rsdp, aborting");
     };
+
+    arch::interrupts::enable();
+
+    vga_println!("For looking up these devices, go to   https://pci-ids.ucw.cz/read/PC/");
+    for device in system::pci::scan() {
+        vga_println!("{:?}", device);
+    }
 
     panic!("End of kernel reached");
 }
