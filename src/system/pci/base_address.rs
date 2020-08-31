@@ -46,6 +46,14 @@ impl BaseAddress {
             Some(BaseAddress::Io { address: val >> 2 })
         }
     }
+
+    /// Returns true if the base address is considered 0.
+    pub fn is_null(&self) -> bool {
+        match self {
+            BaseAddress::Memory { base_address, .. } => *base_address == 0,
+            BaseAddress::Io { address, .. } => *address == 0,
+        }
+    }
 }
 
 /// Determines where the memory BAR can be mapped

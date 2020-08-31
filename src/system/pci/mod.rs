@@ -46,9 +46,7 @@ impl Iterator for Scanner {
 
 pub(self) fn read_location_u32(location: Location) -> u32 {
     unsafe { port::write_u32(0xCF8, location.0 & 0b11111111_11111111_11111111_11111100) };
-    let result = unsafe { port::read_u32(0xCFC) };
-
-    result
+    unsafe { port::read_u32(0xCFC) }
 }
 
 pub(self) fn read_location_u16(location: Location) -> (u16, u16) {

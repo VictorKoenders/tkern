@@ -12,6 +12,8 @@ pub enum QemuExitCode {
 
 /// Exit the qemu virtual machine.
 ///
+/// # Safety
+///
 /// Calling this in any different environment is considered UB
 pub unsafe fn exit_qemu(code: QemuExitCode) {
     use x86_64::instructions::port::Port;

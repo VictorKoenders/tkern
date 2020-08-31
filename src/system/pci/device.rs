@@ -102,6 +102,7 @@ impl DeviceId {
 
 /// An enum with the different types of devices that this kernel supports
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum DeviceKind {
     /// General device information
     General(GeneralDevice),
@@ -178,6 +179,24 @@ impl GeneralDevice {
             interrupt_pin,
             interrupt_line,
         })
+    }
+
+    /// Get a human readable name for a given DeviceKind and DeviceId combination, if known by the kernel.
+    pub fn get_known_name(&self, id: &DeviceId) -> Option<&'static str> {
+        match (
+            id.vendor,
+            id.device,
+            self.subsystem_id,
+            self.subsystem_vendor_id,
+        ) {
+            (0x8086, 0x1237, _, _) => Some("PCI and memory controller"),
+            (0x8086, 0x7000, _, _) => Some("Intel 82371 PIIX3 controller"),
+            (0x8086, 0x7010, _, _) => Some("Intel 82371 PIIX3 controller"),
+            (0x8086, 0x7113, _, _) => Some("Intel 82371 PIIX4 controller"),
+            (0x1b36, 0x0100, _, _) => Some("QXL paravirtual graphic card"),
+            (0x8086, 0x100E, _, _) => Some("82540EM Gigabit Ethernet Controller "),
+            _ => None,
+        }
     }
 }
 
