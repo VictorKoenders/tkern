@@ -20,7 +20,12 @@ clean:
 	rm -r build target
 
 run: $(iso) $(hdd_img)
-	qemu-system-x86_64 -cdrom $(iso) -m 5G -smp 4 -drive file=$(hdd_img),format=raw -boot d -vga qxl
+	qemu-system-x86_64 -cdrom $(iso) -m 5G -smp 4 -drive file=$(hdd_img),format=raw \
+		-boot d -vga qxl -device isa-debug-exit,iobase=0xf4,iosize=0x04
+
+run_terminal: $(iso) $(hdd_img)
+	qemu-system-x86_64 -cdrom $(iso) -m 5G -smp 4 -drive file=$(hdd_img),format=raw \
+		-boot d -vga qxl -curses -device isa-debug-exit,iobase=0xf4,iosize=0x04
 
 iso: $(iso)
 
@@ -50,11 +55,14 @@ build/arch/$(arch)/%.o: arch/$(arch)/%.asm
 	mkdir -p $(shell dirname $@)
 	nasm -felf64 $< -o $@
 
+test:
+	cargo test
+
 check:
 	cargo xcheck --target $(target).json
 
 check_watch:
-	watchexec -r -e ".rs,.toml" -- cargo xcheck --target $(target).json
+	watchexec -cre ".rs,.toml" -- cargo xcheck --target $(target).json
 
 clippy:
 	cargo xclippy --target $(target).json

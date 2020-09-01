@@ -15,7 +15,7 @@ fn alloc_error_handler(layout: Layout) -> ! {
     panic!("Could not allocate memory for {:?}", layout);
 }
 
-#[global_allocator]
+#[cfg_attr(not(test), global_allocator)]
 static mut ALLOCATOR: Allocator = Allocator::uninit();
 
 struct Allocator {

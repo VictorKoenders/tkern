@@ -11,6 +11,8 @@ multiboot2 = "0.9"
 bitflags = "1.2"
 x86_64 = "0.11"
 cortex-a = "3.0"
+pic8259_simple = "0.2"
+pc-keyboard = "0.5"
 
 [dependencies.lazy_static]
 version = "1.4"
