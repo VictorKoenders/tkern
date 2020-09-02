@@ -1,13 +1,16 @@
 # Compiling
 
-First install [rust](https://rustup.rs);
+Follow your platform-specific instructions first, then follow [Configure rust](#configure-rust)
 
-## ubuntu
+## Ubuntu
+
 ```bash
-sudo apt install make build-essential qemu xorriso qemu-system-x86
+sudo apt install make build-essential xorriso qemu-system-x86
 ```
 
 ## Configure rust
+
+First install [rust](https://rustup.rs)
 
 ```bash
 rustup toolchain add nightly
