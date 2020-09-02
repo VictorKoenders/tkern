@@ -1,3 +1,34 @@
+# Compiling
+
+First install [rust](https://rustup.rs);
+
+## ubuntu
+```bash
+sudo apt install make build-essential qemu xorriso qemu-system-x86
+```
+
+## Configure rust
+
+```bash
+rustup toolchain add nightly
+rustup +nightly component add rust-src
+cargo +nightly install cargo-xbuild
+```
+
+You can also make `nightly` default by running:
+
+```bash
+rustup default nightly
+```
+
+## Make commands
+
+`make build`: build the kernel
+`make check`: Check the rust code on validity, faster than `build`
+`make check_watch`: Run `make watch` every time a file changes
+`make run`: build & run the kernel in qemu
+`make run_terminal`: build & run the kernel in your terminal with qemu (ctrl+c to quit)
+
 # References
 
 - [QuiltOS](https://github.com/QuiltOS/QuiltOS), OS written in rust
