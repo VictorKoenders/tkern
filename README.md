@@ -5,7 +5,7 @@ Follow your platform-specific instructions first, then follow [Configure rust](#
 ## Ubuntu
 
 ```bash
-sudo apt install make build-essential xorriso qemu-system-x86
+sudo apt install make build-essential xorriso qemu-system-x86 nasm
 ```
 
 ## Configure rust

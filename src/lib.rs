@@ -101,6 +101,8 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         }
     }
 
+    system::atapi::test();
+
     panic!("End of kernel reached");
 }
 
