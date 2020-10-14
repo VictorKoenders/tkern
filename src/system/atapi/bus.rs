@@ -33,10 +33,10 @@ impl Bus {
         }
     }
 
-    bus_fn! { sector_count, set_sector_count, 2 }
-    bus_fn! { lba_low, set_lba_low, 3 }
-    bus_fn! { lba_mid, set_lba_mid, 4 }
-    bus_fn! { lba_high, set_lba_high, 5 }
+    bus_fn! { #[allow(dead_code)] sector_count, set_sector_count, 2 }
+    bus_fn! { #[allow(dead_code)] lba_low, set_lba_low, 3 }
+    bus_fn! { #[allow(dead_code)] lba_mid, set_lba_mid, 4 }
+    bus_fn! { #[allow(dead_code)] lba_high, set_lba_high, 5 }
     bus_fn! { #[allow(dead_code)] drive, set_drive, 6 }
 
     pub(super) fn error(&self) -> Error {

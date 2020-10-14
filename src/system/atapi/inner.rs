@@ -24,7 +24,7 @@ impl Inner {
             bus.status().as_err(bus)?;
             return Ok(());
         }
-        bus.set_drive(drive & (1 << 4));
+        bus.set_drive(drive);
         self.select_delay(bus).as_err(bus)?;
 
         bus.features(Features::NONE); // PIO mode
@@ -50,7 +50,7 @@ impl Inner {
         }
     }
 
-    fn busy_loop(&self, bus: Bus) -> Status {
+    pub fn busy_loop(&self, bus: Bus) -> Status {
         // first we loop on BUSY
         while bus.status().contains(Status::BUSY) {
             core::sync::atomic::spin_loop_hint();
