@@ -55,7 +55,6 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         panic!("Could not find rsdp, aborting");
     };
 
-
     arch::interrupts::enable();
 
     vga_println!("For looking up these devices, go to   https://pci-ids.ucw.cz/read/PC/");

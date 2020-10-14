@@ -24,7 +24,6 @@ pub fn identify(bus: Bus, primary: bool) -> Result<Identify, Error> {
 
     vga_println!("Status after busy loop: {:?}", status);
 
-
     let bytes = [0u16; 256];
     // TODO: read bytes
 
