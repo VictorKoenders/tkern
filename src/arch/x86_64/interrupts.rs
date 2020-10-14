@@ -4,7 +4,12 @@ use crate::memory::VirtualAddress;
 use lazy_static::lazy_static;
 use pic8259_simple::ChainedPics;
 pub use x86_64::instructions::interrupts::{enable, without_interrupts};
-use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
+use x86_64::{
+    VirtAddr,
+    structures::idt::{InterruptDescriptorTable, InterruptStackFrame},
+    structures::tss::TaskStateSegment,
+    structures::gdt::{SegmentSelector, Descriptor, GlobalDescriptorTable},
+};
 
 const PIC_1_OFFSET: u8 = 32;
 const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
@@ -19,22 +24,57 @@ enum PicIndex {
 static PICS: spin::Mutex<ChainedPics> =
     spin::Mutex::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
 
+pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
+
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
         idt.breakpoint.set_handler_fn(breakpoint_handler);
-        idt.double_fault.set_handler_fn(double_fault_handler);
+        let double_fault = idt.double_fault.set_handler_fn(double_fault_handler);
+        unsafe {
+            double_fault.set_stack_index(DOUBLE_FAULT_IST_INDEX);
+        }
 
         idt[PicIndex::Timer as usize].set_handler_fn(timer_interrupt_handler);
         idt[PicIndex::Keyboard as usize].set_handler_fn(keyboard_interrupt_handler);
         idt
     };
+
+    static ref TSS: TaskStateSegment = {
+        let mut tss = TaskStateSegment::new();
+        tss.interrupt_stack_table[DOUBLE_FAULT_IST_INDEX as usize] = {
+            const STACK_SIZE: usize = 4096 * 5;
+            static mut STACK: [u8; STACK_SIZE] = [0; STACK_SIZE];
+
+            let stack_start = VirtAddr::from_ptr(unsafe { &STACK });
+            let stack_end = stack_start + STACK_SIZE;
+            stack_end
+        };
+        tss
+    };
+    
+    static ref GDT: (GlobalDescriptorTable, Selectors) = {
+        let mut gdt = GlobalDescriptorTable::new();
+        let code_selector = gdt.add_entry(Descriptor::kernel_code_segment());
+        let tss_selector = gdt.add_entry(Descriptor::tss_segment(&TSS));
+        (gdt, Selectors { code_selector, tss_selector })
+    };
+}
+
+struct Selectors {
+    code_selector: SegmentSelector,
+    tss_selector: SegmentSelector,
 }
 
 /// Initializes the interrupt handler.
 /// Before this is called, any interrupt will cause the kernel to reboot.
 /// After this is called, all the interrupts are routed to the [interrupts](../../interrupts/index.html) module.
 pub fn init() {
+    GDT.0.load();
+    unsafe {
+        x86_64::instructions::segmentation::set_cs(GDT.1.code_selector);
+        x86_64::instructions::tables::load_tss(GDT.1.tss_selector);
+    }
     IDT.load();
     unsafe { PICS.lock().initialize() };
 }

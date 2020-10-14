@@ -23,14 +23,14 @@ use memory::PhysicalAddress;
 /// Entry point of the kernel
 #[no_mangle]
 pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
+    arch::interrupts::init();
+
     vga::set_color(vga::ColorCode::new(
         vga::Color::LightGreen,
         vga::Color::Black,
     ));
+
     vga::clear();
-
-    arch::interrupts::init();
-
     vga_println!("TKern {}", env!("CARGO_PKG_VERSION"));
 
     if cfg!(debug_assertions) {
@@ -54,6 +54,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
     } else {
         panic!("Could not find rsdp, aborting");
     };
+
 
     arch::interrupts::enable();
 
