@@ -596,14 +596,6 @@ impl NVCacheOptions {
 pub struct TransportVersion([u16; 2]);
 
 impl TransportVersion {
-    /*
-    struct {
-        USHORT MajorVersion : 12;
-        USHORT TransportType : 4;
-    } TransportMajorVersion;
-    USHORT TransportMinorVersion;
-    */
-
     pub fn major_version(&self) -> u16 {
         self.0[0] >> 4
     }

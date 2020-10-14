@@ -8,11 +8,7 @@ pub use self::bus::Bus;
 use self::{identify::Identify, inner::INNER};
 
 pub fn test() {
-    let bus = Bus::Primary;
-    vga_println!("Sector count: {}", bus.sector_count());
-    vga_println!("LBA low: {}", bus.lba_low());
-    vga_println!("LBA mid: {}", bus.lba_mid());
-    vga_println!("LBA high: {}", bus.lba_high());
+    identify(Bus::Primary, true).unwrap();
 }
 
 pub fn identify(bus: Bus, primary: bool) -> Result<Identify, Error> {
@@ -24,6 +20,10 @@ pub fn identify(bus: Bus, primary: bool) -> Result<Identify, Error> {
     bus.set_lba_high(0);
 
     bus.command(bus::Command::IDENTIFY);
+    let status = inner.busy_loop(bus).as_err(bus)?;
+
+    vga_println!("Status after busy loop: {:?}", status);
+
 
     let bytes = [0u16; 256];
     // TODO: read bytes
