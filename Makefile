@@ -5,6 +5,9 @@ target ?= $(arch)-target
 opt_level ?= debug
 rust_os := target/$(target)/${opt_level}/libtkern.a
 hdd_img := build/hdd.img
+qemu_default_args := -cdrom $(iso) -m 5G -smp 4 -drive file=$(hdd_img),format=raw \
+	-boot d -vga qxl -device isa-debug-exit,iobase=0xf4,iosize=0x04 -M q35 
+
 
 linker_script := arch/$(arch)/linker.ld
 grub_cfg := arch/$(arch)/grub.cfg
@@ -20,16 +23,13 @@ clean:
 	rm -r build target
 
 run: $(iso) $(hdd_img)
-	qemu-system-x86_64 -cdrom $(iso) -m 5G -smp 4 -drive file=$(hdd_img),format=raw \
-		-boot d -vga qxl -device isa-debug-exit,iobase=0xf4,iosize=0x04
+	qemu-system-x86_64 $(qemu_default_args)
 
 run_terminal: $(iso) $(hdd_img)
-	qemu-system-x86_64 -cdrom $(iso) -m 5G -smp 4 -drive file=$(hdd_img),format=raw \
-		-boot d -vga qxl -curses -device isa-debug-exit,iobase=0xf4,iosize=0x04
+	qemu-system-x86_64 $(qemu_default_args) -curses
 
 run_terminal_gdb: $(iso) $(hdd_img)
-	qemu-system-x86_64 -s -S -cdrom $(iso) -m 5G -smp 4 -drive file=$(hdd_img),format=raw \
-		-boot d -vga qxl -curses -device isa-debug-exit,iobase=0xf4,iosize=0x04
+	qemu-system-x86_64 $(qemu_default_args) -s -S -curses
 
 iso: $(iso)
 

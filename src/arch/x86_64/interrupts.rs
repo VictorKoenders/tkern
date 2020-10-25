@@ -7,7 +7,7 @@ pub use x86_64::instructions::interrupts::{enable, without_interrupts};
 use x86_64::{
     structures::{
         gdt::{Descriptor, GlobalDescriptorTable, SegmentSelector},
-        idt::{InterruptDescriptorTable, InterruptStackFrame},
+        idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode},
         tss::TaskStateSegment,
     },
     VirtAddr,
@@ -26,16 +26,21 @@ enum PicIndex {
 static PICS: spin::Mutex<ChainedPics> =
     spin::Mutex::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
 
-pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
+const DOUBLE_FAULT_IST_INDEX: u16 = 0;
 
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
         idt.breakpoint.set_handler_fn(breakpoint_handler);
+
         let double_fault = idt.double_fault.set_handler_fn(double_fault_handler);
         unsafe {
             double_fault.set_stack_index(DOUBLE_FAULT_IST_INDEX);
         }
+
+        idt.page_fault.set_handler_fn(page_fault_handler);
+        idt.general_protection_fault
+            .set_handler_fn(general_protection_fault_handler);
 
         idt[PicIndex::Timer as usize].set_handler_fn(timer_interrupt_handler);
         idt[PicIndex::Keyboard as usize].set_handler_fn(keyboard_interrupt_handler);
@@ -48,8 +53,7 @@ lazy_static! {
             static mut STACK: [u8; STACK_SIZE] = [0; STACK_SIZE];
 
             let stack_start = VirtAddr::from_ptr(unsafe { &STACK });
-            let stack_end = stack_start + STACK_SIZE;
-            stack_end
+            stack_start + STACK_SIZE
         };
         tss
     };
@@ -87,6 +91,20 @@ pub fn init() {
 
 extern "x86-interrupt" fn breakpoint_handler(stack_frame: &mut InterruptStackFrame) {
     crate::interrupts::breakpoint(stack_frame.into());
+}
+
+extern "x86-interrupt" fn page_fault_handler(
+    stack_frame: &mut InterruptStackFrame,
+    code: PageFaultErrorCode,
+) {
+    crate::interrupts::page_fault(stack_frame.into(), code.into());
+}
+
+extern "x86-interrupt" fn general_protection_fault_handler(
+    stack_frame: &mut InterruptStackFrame,
+    code: u64,
+) {
+    crate::interrupts::general_protection(stack_frame.into(), code);
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(stack_frame: &mut InterruptStackFrame) {
@@ -127,5 +145,11 @@ impl<'a> Into<crate::interrupts::StackFrame> for &'a mut InterruptStackFrame {
             stack_pointer: VirtualAddress(self.stack_pointer.as_u64()),
             stack_segment: self.stack_segment,
         }
+    }
+}
+
+impl Into<crate::interrupts::PageFaultCode> for PageFaultErrorCode {
+    fn into(self) -> crate::interrupts::PageFaultCode {
+        unsafe { crate::interrupts::PageFaultCode::from_bits_unchecked(self.bits()) }
     }
 }

@@ -100,6 +100,56 @@ impl DeviceId {
     }
 }
 
+numeric_enum! {
+    /// The Class Code, Subclass, and Prog IF registers are used to identify the device's type, the device's function, and the device's register-level programming interface, respectively.
+    pub enum DeviceClass: u8 {
+        ///
+        Unclassified = 0x00,
+        ///
+        MassStorageController = 0x01,
+        ///
+        NetworkController = 0x02,
+        ///
+        DisplayController = 0x03,
+        ///
+        MultimediaController = 0x04,
+        ///
+        MemoryController = 0x05,
+        ///
+        BridgeDevice = 0x06,
+        ///
+        SimpleCommunicationController = 0x07,
+        ///
+        BaseSystemPeripheral = 0x08,
+        ///
+        InputDeviceController = 0x09,
+        ///
+        DockingStation = 0x0A,
+        ///
+        Processor = 0x0B,
+        ///
+        SerialBusController = 0x0C,
+        ///
+        WirelessController = 0x0D,
+        ///
+        IntelligentController = 0x0E,
+        ///
+        SatelliteCommunicationController = 0x0F,
+        ///
+        EncryptionController = 0x10,
+        ///
+        SignalProcessingController = 0x11,
+        ///
+        ProcessingAcceleration = 0x12,
+        ///
+        NonEssentialInstrumentation = 0x13,
+        ///
+        CoProcessor = 0x40,
+        ///
+        Unassigned = 0xFF
+    }
+}
+
 /// An enum with the different types of devices that this kernel supports
 #[derive(Debug)]
 #[non_exhaustive]
@@ -189,7 +239,12 @@ impl GeneralDevice {
             self.subsystem_id,
             self.subsystem_vendor_id,
         ) {
+            (0x8086, 0x10D3, _, _) => Some("Gigabit Ethernet Controller"),
             (0x8086, 0x1237, _, _) => Some("PCI and memory controller"),
+            (0x8086, 0x2918, _, _) => Some("Low-Pin-Count (legacy) controller"),
+            (0x8086, 0x2922, _, _) => Some("6 port SATA controller"),
+            (0x8086, 0x2930, _, _) => Some("System management bus"),
+            (0x8086, 0x29c0, _, _) => Some("DRAM Controller"),
             (0x8086, 0x7000, _, _) => Some("Intel 82371 PIIX3 controller"),
             (0x8086, 0x7010, _, _) => Some("Intel 82371 PIIX3 controller"),
             (0x8086, 0x7113, _, _) => Some("Intel 82371 PIIX4 controller"),

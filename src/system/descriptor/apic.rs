@@ -15,6 +15,7 @@ pub struct Madt {
 
 impl Madt {
     /// Load the local APIC struct
+    #[allow(dead_code)]
     pub fn apic<'a>(&self, allocator: &'a TableAllocator) -> &'a Apic {
         let addr =
             allocator.get_mapping_for_physical_address(PhysicalAddress(self.apic_address as u64));

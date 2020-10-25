@@ -16,7 +16,6 @@ lazy_static! {
         column_position: 0,
         color_code: ColorCode::new(Color::Yellow, Color::Black),
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
-        lines_written_count: 0
     });
 }
 /// The standard color palette in VGA text mode.
@@ -81,7 +80,6 @@ pub struct Writer {
     column_position: usize,
     color_code: ColorCode,
     buffer: &'static mut Buffer,
-    lines_written_count: usize,
 }
 
 impl Writer {
@@ -135,7 +133,6 @@ impl Writer {
         }
         self.clear_row(BUFFER_HEIGHT - 1);
         self.column_position = 0;
-        self.lines_written_count += 1;
     }
 
     /// Clears a row by overwriting it with blank characters.
@@ -185,17 +182,11 @@ macro_rules! vga_println {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    let should_lock = without_interrupts(|| {
+    without_interrupts(|| {
         let mut lock = WRITER.lock();
         lock.write_fmt(args)
-            .map(|_| lock.lines_written_count >= BUFFER_HEIGHT)
     })
     .unwrap();
-
-    if should_lock {
-        crate::interrupts::wait_for_enter();
-        without_interrupts(|| WRITER.lock().lines_written_count = 0);
-    }
 }
 
 /// Clear the entire screen.

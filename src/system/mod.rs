@@ -1,241 +1,147 @@
-//! System descriptors tables
+//! System module
 //!
-//! This module is used to read the descriptor tables from the system.
+//! This module serves as an abstraction of the hardware.
+//! The goal is to have a single interface where the underlying implementations do not matter.
 //!
-//! For more information see https://wiki.osdev.org/RSDT#What_can_you_find.3F
-//!
-//! ```no_run
-//! # let rsdt_address = 0;
-//! let mapping = TableAllocator::default();
-//! let virt = mapping.get_allocator(PhysicalAddress(rsdt_address));
-//! let table = unsafe { Table::from_address(virt) };
-//! // table is probably a RSDT
-//! // tables and their entries are valid as long as TableAllocator exists
-//! ```
+//! e.g. instead of trying to figure out what system the hardware uses to store information on disk,
+//! this module allows you to request `system.fs().read_exact(idx, offset, &mut buffer)`
 
 pub mod atapi;
 pub mod pci;
 
-use crate::memory::{PhysicalAddress, VirtualAddress};
-use alloc::vec::Vec;
-use apic::ProcessorLocalApic;
+mod descriptor;
 
-mod allocator;
-mod apic;
-mod dsdt;
-mod fadt;
-mod header;
-mod hpet;
-mod rsdt;
+use self::descriptor::Descriptor;
+use crate::PhysicalAddress;
 
-pub use self::{
-    allocator::TableAllocator,
-    apic::{Apic, Madt},
-    dsdt::Dsdt,
-    fadt::V1 as FadtV1,
-    header::Header,
-    hpet::{Count as HpetCount, Hpet},
-    rsdt::RSDT,
-};
-
-/// A strongly typed representation of the available System Descriptor Tables.
-///
-/// https://wiki.osdev.org/RSDT#What_can_you_find.3F
-#[derive(Debug)]
-pub enum Table<'a> {
-    /// The Root System Descriptor Table. Will contain a list of child tables
-    Root(&'a RSDT),
-    /// Fixed ACPI Description table
-    ///
-    /// https://wiki.osdev.org/FADT
-    FadtV1(&'a FadtV1),
-    /// Multiple APIC description tables, contains
-    ///
-    /// https://wiki.osdev.org/MADT
-    Madt(&'a Madt),
-    /// High performance event timers
-    ///
-    /// https://wiki.osdev.org/HPET
-    Hpet(&'a Hpet),
-    /// An unknown table, contains only the header
-    Unknown(&'a Header),
-}
-
-impl<'a> Table<'a> {
-    /// Get the header of any system descriptor table
-    pub fn header(&self) -> &Header {
-        match self {
-            Self::Root(r) => unsafe { &r.header },
-            Self::FadtV1(fadt) => unsafe { &fadt.header },
-            Self::Madt(madt) => unsafe { &madt.header },
-            Self::Hpet(hpet) => unsafe { &hpet.header },
-            Self::Unknown(h) => &h,
-        }
-    }
-
-    /// Get the name of the table, or the signature if this is an `Unknown` table
-    pub fn name(&self) -> &str {
-        match self {
-            Self::Root(_) => "RSDT",
-            Self::FadtV1(_) => "FADT",
-            Self::Madt(_) => "APIC (MADT)",
-            Self::Hpet(_) => "HPET",
-            Self::Unknown(_) => self.header().signature().unwrap_or("Unknown"),
-        }
-    }
-}
-
-/// Contains references to descriptor tables of the entire system.
+/// Reference to the hardware system that the kernel is running on
 pub struct System {
-    /// RSDT table
-    pub rsdt: &'static RSDT,
-    /// FADT table
-    pub fadt: &'static FadtV1,
-    /// MADT table
-    pub madt: &'static Madt,
-    /// High precision event timers, if available
-    pub hpet: Option<&'static Hpet>,
-    /// DSDT blob, contains AML code for drivers
-    pub dsdt: &'static [u8],
-    /// List of processors available on this system
-    pub processors: Vec<&'static ProcessorLocalApic>,
-
-    // Needs to stay allocated for the duration of this system, or the SDT above are unmapped
     #[allow(dead_code)]
-    allocator: &'static TableAllocator,
+    descriptor: Descriptor,
 }
 
 impl Drop for System {
     fn drop(&mut self) {
-        use alloc::boxed::Box;
-        let allocator = unsafe { Box::from_raw(self.allocator as *const _ as *mut TableAllocator) };
-        drop(allocator);
+        panic!("System should never be dropped");
     }
 }
 
 impl System {
-    /// Scan the system for descriptor tables. Will panic if a required table is not found
+    /// Create a new instance of the hardware system
     ///
     /// # Safety
     ///
-    /// The caller must ensure the given address is a valid table. Memory allocation and mapping should also be initialized.
-    pub unsafe fn scan(addr: PhysicalAddress) -> System {
-        fn inner(addr: PhysicalAddress) -> System {
-            use alloc::boxed::Box;
+    /// - The system must ensure that this gets only called once
+    /// - The `descriptor_address` must be a valid RSDT address
+    pub unsafe fn new(descriptor_address: PhysicalAddress) -> Self {
+        let descriptor =
+            Descriptor::scan(descriptor_address).expect("Could not scan descriptor tables");
 
-            let mut partial = PartialSystem {
-                rsdt: None,
-                fadt: None,
-                madt: None,
-                dsdt: None,
-                hpet: None,
-                processors: Vec::new(),
-                allocator: Box::leak(Box::new(TableAllocator::default())),
-            };
-            let root = unsafe { partial.allocator.get_table(addr) };
-            partial.traverse_table(root);
+        System { descriptor }
+    }
 
-            vga_println!(
-                "Descriptor tables take up {} physical mapping(s)",
-                partial.allocator.allocation_count()
+    /// Run tests for debugging purposes
+    pub fn test(&self) {
+        vga_println!("For looking up these devices, go to   https://pci-ids.ucw.cz/read/PC/");
+        let mut atapi_io = None;
+        for device in self::pci::scan() {
+            use self::pci::{BaseAddress, DeviceKind};
+
+            vga_print!(
+                "[{}:{}:{} {}] ",
+                device.location.bus(),
+                device.location.device(),
+                device.location.function(),
+                device.id.class
             );
-            vga_println!(
-                "Found {} processors, {} enabled",
-                partial.processors.len(),
-                partial
-                    .processors
-                    .iter()
-                    .filter(|p| unsafe { p.flags.contains(apic::ProcessorFlags::ENABLED) })
-                    .count()
-            );
-            System {
-                rsdt: partial.rsdt.unwrap(),
-                fadt: partial.fadt.unwrap(),
-                madt: partial.madt.unwrap(),
-                dsdt: partial.dsdt.unwrap(),
-                hpet: partial.hpet,
-                processors: partial.processors,
-                allocator: partial.allocator,
+            vga_print!("{:04X}/{:04X}", device.id.vendor, device.id.device);
+
+            #[allow(irrefutable_let_patterns)]
+            if let DeviceKind::General(kind) = device.kind {
+                vga_print!("/{:04X}{:04X}", kind.subsystem_id, kind.subsystem_vendor_id);
+                if let Some(known_name) = kind.get_known_name(&device.id) {
+                    vga_println!(": {}", known_name);
+                } else {
+                    vga_println!();
+                }
+
+                let mut any_address = false;
+                for (index, bar) in kind.bars.iter().filter(|b| !b.is_null()).enumerate() {
+                    if index == 0 {
+                        vga_print!("Base address: ");
+                        any_address = true;
+                    } else {
+                        vga_print!(", ");
+                    }
+                    match bar {
+                        BaseAddress::Io { address } => {
+                            vga_print!("Io(0x{:X})", address);
+                        }
+                        BaseAddress::Memory { base_address, .. } => {
+                            vga_print!("Memory(0x{:X})", base_address)
+                        }
+                    }
+                }
+                if any_address {
+                    vga_println!();
+                }
+            } else {
+                vga_println!();
             }
         }
-        inner(addr)
+
+        self::atapi::test(atapi_io);
+    }
+
+    /// Get a reference to the persistent storage of this system
+    pub fn storage(&self) -> SystemStorage {
+        SystemStorage { system: self }
     }
 }
 
-struct PartialSystem<'a> {
-    rsdt: Option<&'a RSDT>,
-    fadt: Option<&'a FadtV1>,
-    madt: Option<&'a Madt>,
-    dsdt: Option<&'a [u8]>,
-    hpet: Option<&'a Hpet>,
-    processors: Vec<&'a ProcessorLocalApic>,
-
-    allocator: &'a TableAllocator,
+/// Abstraction of the persistent storage available on this system.
+/// This will most likely be the hard drive that is present in the device.
+pub struct SystemStorage<'a> {
+    #[allow(dead_code)]
+    system: &'a System,
 }
 
-impl<'a> PartialSystem<'a> {
-    fn traverse_table(&mut self, table: Table<'a>) {
-        match table {
-            Table::Root(rsdt) => {
-                if self.rsdt.is_none() {
-                    vga_println!("RSDT    at {:?}", VirtualAddress::from_ref(rsdt));
-                } else {
-                    vga_println!(
-                        "[WARN] Second RSDT at {:?}, overwriting",
-                        VirtualAddress::from_ref(rsdt)
-                    );
-                }
-                self.rsdt = Some(rsdt);
-                for child in rsdt.entries(self.allocator) {
-                    self.traverse_table(child);
-                }
-            }
-            Table::Madt(madt) => {
-                if self.madt.is_none() {
-                    vga_println!("MADT    at {:?}", VirtualAddress::from_ref(madt));
-                } else {
-                    vga_println!(
-                        "[WARN] Second MADT at {:?}, overwriting",
-                        VirtualAddress::from_ref(madt)
-                    );
-                }
-                self.madt = Some(madt);
-                let processors = madt
-                    .interrupt_devices(self.allocator)
-                    .filter_map(|d| match d {
-                        apic::InterruptDevice::ProcessorLocal(processor) => Some(processor),
-                        _ => None,
-                    })
-                    .collect::<Vec<_>>();
+#[allow(unused_variables)]
+impl SystemStorage<'_> {
+    /// Return the amount of drives that are available on this system.
+    /// This value may be cached for performance reasons.
+    ///
+    /// This may report more or less drives than there are storage devices in the system.
+    /// Drivers are allowed to merge or split up devices based on what the driver deems best.
+    ///
+    /// Even though this function is marked async, some implementations may infact be executed in a synchronous matter.
+    pub async fn drive_count(&self) -> Result<u8, ()> {
+        Ok(0)
+    }
 
-                self.processors = processors;
-            }
-            Table::FadtV1(fadt_v1) => {
-                if self.fadt.is_none() {
-                    vga_println!("FADT V1 at {:?}", VirtualAddress::from_ref(fadt_v1));
-                } else {
-                    vga_println!(
-                        "[WARN] Second FADT V1 at {:?}, overwriting",
-                        VirtualAddress::from_ref(fadt_v1)
-                    );
-                }
-                self.dsdt = Some(fadt_v1.dsdt(self.allocator).read(self.allocator));
-                self.fadt = Some(fadt_v1);
-            }
-            Table::Hpet(hpet) => {
-                if self.hpet.is_none() {
-                    vga_println!("HPET    at {:?}", VirtualAddress::from_ref(hpet));
-                } else {
-                    vga_println!(
-                        "[WARN] Second HPET at {:?}, overwriting",
-                        VirtualAddress::from_ref(hpet)
-                    );
-                }
-                self.hpet = Some(hpet);
-            }
-            Table::Unknown(h) => {
-                vga_println!("[WARN] Unknown SDT {:?}", h.signature());
-            }
-        }
+    /// Return the storage size available on the given drive.
+    /// This value may be cached for performance reasons
+    ///
+    /// Even though this function is marked async, some implementations may infact be executed in a synchronous matter.
+    pub async fn storage_size(&self, index: u8) -> Result<usize, ()> {
+        Err(())
+    }
+
+    /// Read N bytes from the given disk `index` at the given `offset`.
+    /// If the buffer could not be filled, an error is thrown.
+    /// The contents of `buffer` can be partially overwritten before an error is thrown.
+    ///
+    /// Even though this function is marked async, some implementations may infact be executed in a synchronous matter.
+    pub async fn read_exact(&self, index: u8, offset: usize, buffer: &mut [u8]) -> Result<(), ()> {
+        Err(())
+    }
+
+    /// Write N bytes to the given disk `index` at the given `offset`.
+    /// If the full buffer could not be written, an error is thrown.
+    /// It is possible for the write action to partially succeed, while still throwing an error.
+    ///
+    /// Even though this function is marked async, some implementations may infact be executed in a synchronous matter.
+    pub async fn write_exact(&self, index: u8, offset: usize, buffer: &[u8]) -> Result<(), ()> {
+        Err(())
     }
 }

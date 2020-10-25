@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::Header;
 
 /// High precision event timer.

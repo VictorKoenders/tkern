@@ -1,9 +1,19 @@
 use crate::arch::port;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Bus {
-    Primary,
-    Secondary,
+pub struct Bus(u16);
+
+impl Bus {
+    pub unsafe fn new(address: u16) -> Bus {
+        Bus(address)
+    }
+    pub fn ata_primary() -> Bus {
+        Bus(0x1F0)
+    }
+
+    pub fn ata_secondary() -> Bus {
+        Bus(0x170)
+    }
 }
 
 macro_rules! bus_fn {
@@ -27,10 +37,7 @@ macro_rules! bus_fn {
 
 impl Bus {
     fn address(&self, offset: u16) -> u16 {
-        match self {
-            Bus::Primary => 0x1F0 + offset,
-            Bus::Secondary => 0x170 + offset,
-        }
+        self.0 + offset
     }
 
     bus_fn! { #[allow(dead_code)] sector_count, set_sector_count, 2 }
@@ -55,6 +62,7 @@ impl Bus {
         unsafe { port::write_u8(self.address(7), command.0) }
     }
 
+    #[allow(dead_code)]
     pub(super) unsafe fn write_data(&self, data: &[u8]) {
         for data in data.chunks(2) {
             let u16_val = ((data[0] as u16) << 8) | (data[1] as u16);

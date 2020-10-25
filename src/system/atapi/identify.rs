@@ -1,3 +1,5 @@
+#![allow(dead_code, missing_docs, non_snake_case)]
+
 #[repr(packed)]
 pub struct Identify {
     pub config: IdentifyGeneralConfiguration, // u16
