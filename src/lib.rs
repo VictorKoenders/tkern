@@ -10,20 +10,22 @@ extern crate alloc;
 
 #[macro_use]
 pub mod vga;
+#[macro_use]
+pub mod utils;
 pub mod allocator;
 pub mod arch;
 pub mod dev_utils;
 pub mod interrupts;
 pub mod memory;
 pub mod system;
-pub mod utils;
 
 use memory::PhysicalAddress;
 
 /// Entry point of the kernel
 #[no_mangle]
 pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
-    arch::interrupts::init();
+    crate::arch::interrupts::init();
+    crate::arch::interrupts::enable();
 
     vga::set_color(vga::ColorCode::new(
         vga::Color::LightGreen,
@@ -44,64 +46,18 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         memory::init();
     }
 
-    let _system = if let Some(rsdp) = boot_info.rsdp_v2_tag() {
+    let system = if let Some(rsdp) = boot_info.rsdp_v2_tag() {
         vga_println!("RSDP V2 at {:p}", rsdp);
         unimplemented!()
     } else if let Some(rsdp) = boot_info.rsdp_v1_tag() {
         let addr = PhysicalAddress(rsdp.rsdt_address() as u64);
         vga_println!("RSDP V1 at {:?}", addr);
-        unsafe { system::System::scan(addr) }
+        unsafe { system::System::new(addr) }
     } else {
         panic!("Could not find rsdp, aborting");
     };
 
-    arch::interrupts::enable();
-
-    vga_println!("For looking up these devices, go to   https://pci-ids.ucw.cz/read/PC/");
-    for device in system::pci::scan() {
-        use system::pci::{BaseAddress, DeviceKind};
-
-        vga_print!(
-            "[{}:{}:{}] ",
-            device.location.bus(),
-            device.location.device(),
-            device.location.function()
-        );
-        vga_print!("{:04X}/{:04X}", device.id.vendor, device.id.device);
-
-        #[allow(irrefutable_let_patterns)]
-        if let DeviceKind::General(kind) = device.kind {
-            vga_print!("/{:04X}{:04X}", kind.subsystem_id, kind.subsystem_vendor_id);
-            if let Some(known_name) = kind.get_known_name(&device.id) {
-                vga_println!(": {}", known_name);
-            } else {
-                vga_println!();
-            }
-
-            let mut any_address = false;
-            for (index, bar) in kind.bars.iter().filter(|b| !b.is_null()).enumerate() {
-                if index == 0 {
-                    vga_print!("Base address: ");
-                    any_address = true;
-                } else {
-                    vga_print!(", ");
-                }
-                match bar {
-                    BaseAddress::Io { address } => vga_print!("Io(0x{:X})", address),
-                    BaseAddress::Memory { base_address, .. } => {
-                        vga_print!("Memory(0x{:X})", base_address)
-                    }
-                }
-            }
-            if any_address {
-                vga_println!();
-            }
-        } else {
-            vga_println!();
-        }
-    }
-
-    system::atapi::test();
+    system.test();
 
     panic!("End of kernel reached");
 }

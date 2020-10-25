@@ -27,13 +27,30 @@ impl TableAllocator {
         let header = addr.deref_leak::<Header>();
         let table = match &header.signature {
             b"RSDT" => Table::Root(addr.deref_leak()),
-            b"FACP" if header.length == FadtV1::LENGTH => Table::FadtV1(addr.deref_leak()),
-            b"APIC" => Table::Madt(addr.deref_leak::<Madt>()),
-            b"HPET" => Table::Hpet(addr.deref_leak::<Hpet>()),
+            b"FACP" if header.length == FadtV1::LENGTH => Table::Fadt(Fadt::V1(addr.deref_leak())),
+            b"FACP" if header.length == FadtV2::LENGTH => Table::Fadt(Fadt::V2(addr.deref_leak())),
+            b"FACP" if header.length == FadtV3::LENGTH => Table::Fadt(Fadt::V3(addr.deref_leak())),
+            b"APIC" => Table::Madt(addr.deref_leak()),
+            b"HPET" => Table::Hpet(addr.deref_leak()),
+            b"MCFG" => Table::Mcfg(addr.deref_leak()),
             _ => Table::Unknown(header),
         };
 
-        assert!(table.header().is_valid(), "Table {:?} is not valid", table);
+        assert!(
+            table.header().is_valid(),
+            "Table {:?} (len {}) is not valid",
+            table,
+            header.length
+        );
+        if !table.has_trailing_bytes() {
+            assert_eq!(
+                table.header().length as usize,
+                table.mem_size(),
+                "Table {:?} (len {}) length is not valid",
+                table,
+                header.length
+            );
+        }
         table
     }
 

@@ -2,17 +2,43 @@ mod bus;
 pub mod identify;
 mod inner;
 
+#[allow(dead_code)]
 pub const SECTOR_SIZE: usize = 2048;
 pub use self::bus::Bus;
 
 use self::{identify::Identify, inner::INNER};
 
-pub fn test() {
-    identify(Bus::Primary, true).unwrap();
+pub fn test(address: Option<u16>) {
+    let bus = if let Some(a) = address {
+        unsafe { Bus::new(a) }
+    } else {
+        Bus::ata_primary()
+    };
+    match identify(bus, true) {
+        Ok(_identify) => {
+            vga_println!("Ok normal identify");
+        }
+        Err(Error::BusSelect) => {
+            vga_println!("Normal ATAPI did not work, trying SATA");
+            // Read signature bytes
+            let signature_byte_1 = bus.lba_mid();
+            let signature_byte_2 = bus.lba_high();
+
+            vga_println!(
+                "Signature bytes: 0x{:02X} and 0x{:02X}",
+                signature_byte_1,
+                signature_byte_2
+            );
+        }
+        Err(e) => {
+            vga_println!("Could not identify ATAPI: {:?}", e);
+        }
+    }
 }
 
 pub fn identify(bus: Bus, primary: bool) -> Result<Identify, Error> {
     let mut inner = INNER.lock();
+    vga_println!("Testing ATAPI on bus {:?}", bus);
     inner.drive_select(bus, if primary { 0xA0 } else { 0xB0 })?;
     bus.set_sector_count(0);
     bus.set_lba_low(0);
@@ -30,6 +56,7 @@ pub fn identify(bus: Bus, primary: bool) -> Result<Identify, Error> {
     unsafe { Ok(core::mem::transmute(bytes)) }
 }
 
+#[allow(dead_code)]
 pub fn read_sector(
     bus: Bus,
     drive: u8,
@@ -62,7 +89,9 @@ pub fn read_sector(
 }
 
 #[derive(Debug)]
+#[allow(missing_docs)]
 pub enum Error {
+    BusSelect,
     AddressMarkNotFound,
     TrackZeroNotFound,
     Aborted,

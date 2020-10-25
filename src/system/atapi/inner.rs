@@ -25,7 +25,9 @@ impl Inner {
             return Ok(());
         }
         bus.set_drive(drive);
-        self.select_delay(bus).as_err(bus)?;
+        if self.select_delay(bus).contains(Status::ERROR) {
+            return Err(Error::BusSelect);
+        }
 
         bus.features(Features::NONE); // PIO mode
         bus.set_lba_mid((SECTOR_SIZE & 0xFF) as u8);
