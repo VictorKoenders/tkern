@@ -1,7 +1,7 @@
 #![allow(missing_docs, non_snake_case)]
 
 use super::{Dsdt, Header};
-use crate::memory::{PhysicalAddress, VirtualAddress};
+use crate::{PhysicalAddress, VirtualAddress};
 
 #[derive(Debug, Clone)]
 pub enum Fadt<'a> {

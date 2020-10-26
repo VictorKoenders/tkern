@@ -1,16 +1,13 @@
+
 //! Memory mapping.
 //!
 //! See [Mapper] for more information.
 
-mod address;
-mod paging;
-
-pub use self::address::{AddressAccess, PhysicalAddress, VirtualAddress};
-
 use bitflags::bitflags;
 use lazy_static::lazy_static;
-use paging::ActivePageTable;
+use super::paging::{ActivePageTable, EntryFlags};
 use spin::Mutex;
+use crate::{VirtualAddress, PhysicalAddress};
 
 /// MMU page size, 4 KB
 pub const PAGE_SIZE: u64 = 4 * 1024; // 4kb
@@ -107,13 +104,13 @@ bitflags! {
 }
 
 impl AllocateOptions {
-    pub(self) fn flags(self) -> paging::EntryFlags {
-        let mut flags = paging::EntryFlags::empty();
+    pub(super) fn flags(self) -> EntryFlags {
+        let mut flags = EntryFlags::empty();
         if self.contains(AllocateOptions::WRITABLE) {
-            flags |= paging::EntryFlags::WRITABLE;
+            flags |= EntryFlags::WRITABLE;
         }
         if self.contains(AllocateOptions::USER_ACCESSIBLE) {
-            flags |= paging::EntryFlags::USER_ACCESSIBLE;
+            flags |= EntryFlags::USER_ACCESSIBLE;
         }
         flags
     }

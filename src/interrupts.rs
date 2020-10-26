@@ -2,7 +2,7 @@
 //!
 //! These interrupts get called from the arch/xxx/interrupts.rs module
 
-use crate::memory::VirtualAddress;
+use crate::VirtualAddress;
 use core::sync::atomic::{AtomicUsize, Ordering};
 use lazy_static::lazy_static;
 use pc_keyboard::{layouts, DecodedKey, HandleControl, KeyCode, KeyState, Keyboard, ScancodeSet1};

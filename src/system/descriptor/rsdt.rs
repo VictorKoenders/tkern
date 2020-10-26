@@ -1,5 +1,5 @@
 use super::{Header, Table, TableAllocator};
-use crate::memory::PhysicalAddress;
+use crate::PhysicalAddress;
 
 /// The root system descriptor table. This is used to be a list of child tables.
 ///

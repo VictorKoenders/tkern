@@ -61,7 +61,7 @@ pub struct DeviceId {
     /// A read-only register that specifies a register-level programming interface the device has, if it has any at all.
     pub programmable_interface: u8,
     /// A read-only register that specifies the type of function the device performs.
-    pub class: u8,
+    pub class: DeviceClass,
     /// A read-only register that specifies the specific function the device performs.
     pub subclass: u8,
     /// Specifies the system cache line size in 32-bit units.
@@ -76,7 +76,7 @@ pub struct DeviceId {
 
 impl DeviceId {
     pub(super) fn read(vendor: u16, device: u16, location: Location) -> Option<(Self, u8)> {
-        let (revision_id, programmable_interface, subclass, class) =
+        let (revision_id, programmable_interface, subclass, class_id) =
             read_location_u8(location.with_offset(0x08));
 
         let (cache_line_size, latency_timer, header_type, build_in_self_test) =
@@ -88,7 +88,7 @@ impl DeviceId {
                 device,
                 revision_id,
                 programmable_interface,
-                class,
+                class: DeviceClass::new(class_id),
                 subclass,
 
                 cache_line_size,
@@ -102,6 +102,7 @@ impl DeviceId {
 
 numeric_enum! {
     /// The Class Code, Subclass, and Prog IF registers are used to identify the device's type, the device's function, and the device's register-level programming interface, respectively.
+    #[derive(Debug)]
     pub enum DeviceClass: u8 {
         ///
         Unclassified = 0x00,

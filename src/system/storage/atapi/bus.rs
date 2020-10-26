@@ -4,6 +4,12 @@ use crate::arch::port;
 pub struct Bus(u16);
 
 impl Bus {
+    /// Create a new bus at the given address
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the address is correct.
+    /// Writing data to wrong addresses can cause extreme undefined behavior.
     pub unsafe fn new(address: u16) -> Bus {
         Bus(address)
     }

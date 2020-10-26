@@ -1,4 +1,5 @@
-use super::{PhysicalAddress, VirtualAddress};
+use crate::{PhysicalAddress, VirtualAddress};
+use super::mapping::AllocateOptions;
 use bitflags::bitflags;
 use core::{
     marker::{PhantomData, Sized},
@@ -197,7 +198,7 @@ impl ActivePageTable {
         &mut self,
         physical: PhysicalAddress,
         virt: VirtualAddress,
-        options: super::AllocateOptions,
+        options: AllocateOptions,
     ) {
         let p4 = self.p4_mut();
         let p3 = p4.next_table_create(virt.p4_index());

@@ -2,7 +2,7 @@
 //!
 //! This module allows the kernel to write to the screen before the actual screen driver is initialized.
 
-use crate::{arch::interrupts::without_interrupts, memory::VirtualAddress};
+use crate::{arch::interrupts::without_interrupts, VirtualAddress};
 use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;

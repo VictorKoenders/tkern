@@ -1,5 +1,5 @@
 use super::{Header, TableAllocator};
-use crate::{memory::PhysicalAddress, utils::slice::SliceUtils};
+use crate::{PhysicalAddress, utils::slice::SliceUtils};
 
 /// MADT describes all of the interrupt controllers in the system.
 ///
