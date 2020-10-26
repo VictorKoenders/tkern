@@ -1,5 +1,5 @@
-use crate::{PhysicalAddress, VirtualAddress};
 use super::mapping::AllocateOptions;
+use crate::{PhysicalAddress, VirtualAddress};
 use bitflags::bitflags;
 use core::{
     marker::{PhantomData, Sized},

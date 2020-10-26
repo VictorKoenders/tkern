@@ -1,6 +1,5 @@
 use super::*;
-use crate::{PhysicalAddress, VirtualAddress};
-use crate::system::memory::mapping::*;
+use crate::{system::memory::mapping::*, PhysicalAddress, VirtualAddress};
 use alloc::vec::Vec;
 use core::cell::RefCell;
 

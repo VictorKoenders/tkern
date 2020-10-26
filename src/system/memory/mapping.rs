@@ -1,13 +1,12 @@
-
 //! Memory mapping.
 //!
 //! See [Mapper] for more information.
 
+use super::paging::{ActivePageTable, EntryFlags};
+use crate::{PhysicalAddress, VirtualAddress};
 use bitflags::bitflags;
 use lazy_static::lazy_static;
-use super::paging::{ActivePageTable, EntryFlags};
 use spin::Mutex;
-use crate::{VirtualAddress, PhysicalAddress};
 
 /// MMU page size, 4 KB
 pub const PAGE_SIZE: u64 = 4 * 1024; // 4kb

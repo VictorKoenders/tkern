@@ -13,7 +13,7 @@ pub struct SystemStorage {
 impl SystemStorage {
     pub(super) fn new() -> SystemStorage {
         Self {
-            drivers: SmallVec::new()
+            drivers: SmallVec::new(),
         }
     }
 
@@ -52,7 +52,12 @@ impl SystemStorage {
     /// The contents of `buffer` can be partially overwritten before an error is thrown.
     ///
     /// Even though this function is marked async, some implementations may infact be executed in a synchronous matter.
-    pub async fn read_exact(&self, mut index: u8, offset: usize, buffer: &mut [u8]) -> Result<(), Error> {
+    pub async fn read_exact(
+        &self,
+        mut index: u8,
+        offset: usize,
+        buffer: &mut [u8],
+    ) -> Result<(), Error> {
         for driver in &self.drivers {
             let device_count = driver.device_count()?;
             if device_count > index {
@@ -73,7 +78,12 @@ impl SystemStorage {
     /// It is possible for the write action to partially succeed, while still throwing an error.
     ///
     /// Even though this function is marked async, some implementations may infact be executed in a synchronous matter.
-    pub async fn write_exact(&self, mut index: u8, offset: usize, buffer: &[u8]) -> Result<(), Error> {
+    pub async fn write_exact(
+        &self,
+        mut index: u8,
+        offset: usize,
+        buffer: &[u8],
+    ) -> Result<(), Error> {
         for driver in &self.drivers {
             let device_count = driver.device_count()?;
             if device_count > index {
