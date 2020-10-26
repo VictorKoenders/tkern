@@ -1,6 +1,6 @@
 pub mod pci;
 
-use super::{System};
+use super::System;
 
 /// Create a new instance of the hardware system
 pub unsafe fn init(_system: &mut System) {
