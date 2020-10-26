@@ -15,7 +15,7 @@
 //! // tables and their entries are valid as long as TableAllocator exists
 //! ```
 
-use crate::memory::PhysicalAddress;
+use crate::PhysicalAddress;
 use alloc::vec::Vec;
 use apic::ProcessorLocalApic;
 

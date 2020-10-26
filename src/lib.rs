@@ -4,7 +4,7 @@
 
 #![feature(lang_items, alloc_error_handler, llvm_asm, abi_x86_interrupt)]
 #![no_std]
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 
 extern crate alloc;
 
@@ -16,10 +16,9 @@ pub mod allocator;
 pub mod arch;
 pub mod dev_utils;
 pub mod interrupts;
-pub mod memory;
 pub mod system;
 
-use memory::PhysicalAddress;
+pub use self::system::memory::{PhysicalAddress, VirtualAddress};
 
 /// Entry point of the kernel
 #[no_mangle]
@@ -43,10 +42,9 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
 
     unsafe {
         allocator::init(&boot_info);
-        memory::init();
     }
 
-    let system = if let Some(rsdp) = boot_info.rsdp_v2_tag() {
+    let _system = if let Some(rsdp) = boot_info.rsdp_v2_tag() {
         vga_println!("RSDP V2 at {:p}", rsdp);
         unimplemented!()
     } else if let Some(rsdp) = boot_info.rsdp_v1_tag() {
@@ -56,8 +54,6 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
     } else {
         panic!("Could not find rsdp, aborting");
     };
-
-    system.test();
 
     panic!("End of kernel reached");
 }

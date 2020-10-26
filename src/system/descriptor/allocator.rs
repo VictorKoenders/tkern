@@ -1,8 +1,6 @@
 use super::*;
-use crate::memory::{
-    AllocateOptions, AllocatedPhysicalPageMapping, Mapper, PhysicalAddress, VirtualAddress,
-    PAGE_SIZE,
-};
+use crate::{PhysicalAddress, VirtualAddress};
+use crate::system::memory::mapping::*;
 use alloc::vec::Vec;
 use core::cell::RefCell;
 

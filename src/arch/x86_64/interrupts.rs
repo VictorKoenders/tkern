@@ -1,6 +1,6 @@
 //! x86_64-specific interrupt logic. This serves as a glue between the x86_64 hardware and the [interrupts](../../interrupts/index.html) module
 
-use crate::memory::VirtualAddress;
+use crate::VirtualAddress;
 use lazy_static::lazy_static;
 use pic8259_simple::ChainedPics;
 pub use x86_64::instructions::interrupts::{enable, without_interrupts};

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::memory::VirtualAddress;
+use crate::VirtualAddress;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]

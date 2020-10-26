@@ -1,5 +1,6 @@
 use super::{Header, TableAllocator};
-use crate::memory::{PhysicalAddress, VirtualAddress, PAGE_SIZE};
+use crate::{PhysicalAddress, VirtualAddress};
+use crate::system::memory::mapping::PAGE_SIZE;
 
 /// The DSDT table, contains AML code for drivers
 #[repr(packed)]

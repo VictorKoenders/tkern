@@ -9,7 +9,7 @@ use super::{
     mcfg::Mcfg,
     rsdt::RSDT,
 };
-use crate::memory::VirtualAddress;
+use crate::VirtualAddress;
 use alloc::vec::Vec;
 
 /// A strongly typed representation of the available System Descriptor Tables.
