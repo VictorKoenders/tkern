@@ -104,7 +104,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
     panic!("End of kernel reached");
 }
 
-#[cfg(not(any(target_os = "linux")))]
+#[cfg(not(target_os = "linux"))]
 #[panic_handler]
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
     vga_println!("{}", info);
