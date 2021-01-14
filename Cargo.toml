@@ -6,11 +6,11 @@ authors = ["Victor Koenders <victor.koenders@gmail.com>"]
 
 [dependencies]
 volatile = "0.3"
-spin = "0.5"
-multiboot2 = "0.9"
+spin = "0.7"
+multiboot2 = "0.10"
 bitflags = "1.2"
-x86_64 = "0.11"
-cortex-a = "3.0"
+x86_64 = "0.13"
+# cortex-a = "5.1"
 pic8259_simple = "0.2"
 pc-keyboard = "0.5"
 
