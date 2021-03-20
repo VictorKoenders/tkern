@@ -6,7 +6,7 @@ pub struct FutId(usize);
 
 impl FutId {
     const ID_BIT_LENGTH: usize = core::mem::size_of::<usize>() * 8 - 8;
-    const MAX_VALUE: usize = 1usize << Self::ID_BIT_LENGTH - 1;
+    const MAX_VALUE: usize = (1usize << Self::ID_BIT_LENGTH) - 1;
     const RAW_WAKER_VTABLE: RawWakerVTable = RawWakerVTable::new(
         fut_id_waker_clone,
         fut_id_waker_wake,
@@ -31,19 +31,30 @@ impl FutId {
     }
 
     pub fn waker(&self) -> Waker {
+        // SAFETY:
+        // This should be safe, as the value we're passing as a pointer is interpreted as
+        // a FutId.0 value in the `fut_id_waker_*` functions below
         unsafe { Waker::from_raw(RawWaker::new(self.0 as *const (), &Self::RAW_WAKER_VTABLE)) }
     }
 }
 
+// SAFETY:
+// The passed `data: *const()` is a `FutId.0` value, and should be treated as one
 unsafe fn fut_id_waker_clone(data: *const ()) -> RawWaker {
     RawWaker::new(data, &FutId::RAW_WAKER_VTABLE)
 }
+// SAFETY:
+// The passed `data: *const()` is a `FutId.0` value, and should be treated as one
 unsafe fn fut_id_waker_wake(data: *const ()) {
     let futid = FutId(data as usize);
     RUNTIME.notify_awake(futid);
 }
+// SAFETY:
+// The passed `data: *const()` is a `FutId.0` value, and should be treated as one
 unsafe fn fut_id_waker_wake_by_ref(data: *const ()) {
     let futid = FutId(data as usize);
     RUNTIME.notify_awake(futid);
 }
+// SAFETY:
+// The passed `_: *const()` is a `FutId.0` value, and should be treated as one
 unsafe fn fut_id_waker_drop(_: *const ()) {}

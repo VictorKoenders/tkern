@@ -88,7 +88,7 @@ macro_rules! numeric_enum {
             }
 
             /// Return the numeric value of the current variant
-            pub fn as_numeric(self) -> $type {
+            pub fn into_numeric(self) -> $type {
                 match self {
                     $(Self::$variant_name => $variant_value,)*
                     Self::Unknown(x) => x

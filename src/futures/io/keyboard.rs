@@ -10,8 +10,7 @@ where
     F: FnOnce(&Keyboard) -> T,
 {
     let runtime = &crate::futures::RUNTIME;
-    let t = f(&runtime.keyboard);
-    t
+    f(&runtime.keyboard)
 }
 
 #[derive(Default)]

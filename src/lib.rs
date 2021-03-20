@@ -9,6 +9,7 @@
     abi_x86_interrupt,
     never_type
 )]
+#![allow(clippy::unusual_byte_groupings)]
 #![no_std]
 // #![warn(missing_docs)]
 

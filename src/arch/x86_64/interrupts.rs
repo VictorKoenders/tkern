@@ -136,6 +136,7 @@ extern "x86-interrupt" fn double_fault_handler(
     crate::interrupts::double_fault(stack_frame.into(), error_code);
 }
 
+#[allow(clippy::from_over_into)]
 impl<'a> Into<crate::interrupts::StackFrame> for &'a mut InterruptStackFrame {
     fn into(self) -> crate::interrupts::StackFrame {
         crate::interrupts::StackFrame {
@@ -148,6 +149,7 @@ impl<'a> Into<crate::interrupts::StackFrame> for &'a mut InterruptStackFrame {
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<crate::interrupts::PageFaultCode> for PageFaultErrorCode {
     fn into(self) -> crate::interrupts::PageFaultCode {
         unsafe { crate::interrupts::PageFaultCode::from_bits_unchecked(self.bits()) }
