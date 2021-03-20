@@ -102,7 +102,7 @@ impl DeviceId {
 
 numeric_enum! {
     /// The Class Code, Subclass, and Prog IF registers are used to identify the device's type, the device's function, and the device's register-level programming interface, respectively.
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq, Eq)]
     pub enum DeviceClass: u8 {
         ///
         Unclassified = 0x00,

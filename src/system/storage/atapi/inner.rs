@@ -55,7 +55,7 @@ impl Inner {
     pub fn busy_loop(&self, bus: Bus) -> Status {
         // first we loop on BUSY
         while bus.status().contains(Status::BUSY) {
-            core::sync::atomic::spin_loop_hint();
+            core::hint::spin_loop();
         }
 
         // Then we loop on BUSY and !ERR
@@ -64,7 +64,7 @@ impl Inner {
             if !status.contains(Status::BUSY) || status.contains(Status::ERROR) {
                 return status;
             }
-            core::sync::atomic::spin_loop_hint();
+            core::hint::spin_loop();
         }
     }
 }
