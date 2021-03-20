@@ -4,7 +4,11 @@ mod pci_storage;
 use super::System;
 
 /// Create a new instance of the hardware system
-pub unsafe fn init(system: &mut System) {
+///
+/// # Safety
+///
+/// Should be called exactly once, and
+pub fn init(system: &mut System) {
     vga_println!("For looking up these devices, go to   https://pci-ids.ucw.cz/read/PC/");
     for device in self::pci::scan() {
         use self::pci::{BaseAddress, DeviceClass, DeviceKind};

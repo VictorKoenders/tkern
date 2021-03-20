@@ -29,6 +29,10 @@ lazy_static! {
 
 #[derive(Default)]
 pub struct Runtime {
+    // TODO: these mutexes seem very inefficient for multithreaded access,
+    // specifically the entire futures mutex being locked when a single future is executing.
+    // We should validate this assumption and find a better way to access
+    // this data if it turns out to be an issue
     futures: Mutex<Vec<MaybeFut>>,
     awoken_futures: Mutex<Vec<FutId>>,
     keyboard: self::io::Keyboard,
@@ -116,7 +120,7 @@ impl Runtime {
         loop {
             let awoken_count = self.awoken_future_count.load(Ordering::Relaxed);
             if awoken_count == 0 {
-                core::hint::spin_loop();
+                crate::arch::halt();
                 continue;
             }
             let awoken_futures = {

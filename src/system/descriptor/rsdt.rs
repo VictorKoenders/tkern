@@ -6,6 +6,7 @@ use crate::PhysicalAddress;
 /// https://wiki.osdev.org/RSDT
 #[repr(packed)]
 #[derive(Debug, Copy, Clone)]
+#[allow(clippy::upper_case_acronyms)]
 pub struct RSDT {
     /// The common header of all system descriptor tables
     pub header: Header,
