@@ -17,6 +17,10 @@ impl SystemStorage {
         }
     }
 
+    pub fn register(&mut self, storage: impl Storage + 'static) {
+        self.drivers.push(Arc::new(storage));
+    }
+
     /// Return the amount of drives that are available on this system.
     /// This value may be cached for performance reasons.
     ///

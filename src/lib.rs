@@ -2,7 +2,13 @@
 //!
 //! An experimental kernel
 
-#![feature(lang_items, alloc_error_handler, llvm_asm, abi_x86_interrupt)]
+#![feature(
+    lang_items,
+    alloc_error_handler,
+    llvm_asm,
+    abi_x86_interrupt,
+    never_type
+)]
 #![no_std]
 // #![warn(missing_docs)]
 
@@ -15,6 +21,7 @@ pub mod utils;
 pub mod allocator;
 pub mod arch;
 pub mod dev_utils;
+pub mod futures;
 pub mod interrupts;
 pub mod system;
 
@@ -44,7 +51,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         allocator::init(&boot_info);
     }
 
-    let _system = if let Some(rsdp) = boot_info.rsdp_v2_tag() {
+    /*let _system = if let Some(rsdp) = boot_info.rsdp_v2_tag() {
         vga_println!("RSDP V2 at {:p}", rsdp);
         unimplemented!()
     } else if let Some(rsdp) = boot_info.rsdp_v1_tag() {
@@ -53,12 +60,20 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         unsafe { system::System::new(addr) }
     } else {
         panic!("Could not find rsdp, aborting");
-    };
+    };*/
 
-    panic!("End of kernel reached");
+    crate::futures::RUNTIME.run(async move {
+        loop {
+            let key = crate::futures::io::Keyboard::next_key().await;
+            if key.character == 'c' && key.modifiers.ctrl_pressed {
+                unsafe { dev_utils::exit_qemu(dev_utils::QemuExitCode::Success) };
+            }
+            vga_print!("{}", key.character);
+        }
+    });
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(test))]
 #[panic_handler]
 fn panic_handler(info: &core::panic::PanicInfo) -> ! {
     vga_println!("{}", info);

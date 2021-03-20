@@ -9,7 +9,7 @@ type Inner = self::bump::BumpAllocator;
 
 use core::alloc::Layout;
 
-#[cfg(not(any(target_os = "linux")))]
+#[cfg(not(test))]
 #[alloc_error_handler]
 fn alloc_error_handler(layout: Layout) -> ! {
     panic!("Could not allocate memory for {:?}", layout);

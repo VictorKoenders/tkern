@@ -1,12 +1,13 @@
 pub mod pci;
+mod pci_storage;
 
 use super::System;
 
 /// Create a new instance of the hardware system
-pub unsafe fn init(_system: &mut System) {
+pub unsafe fn init(system: &mut System) {
     vga_println!("For looking up these devices, go to   https://pci-ids.ucw.cz/read/PC/");
     for device in self::pci::scan() {
-        use self::pci::{BaseAddress, DeviceKind};
+        use self::pci::{BaseAddress, DeviceClass, DeviceKind};
 
         vga_print!(
             "[{}:{}:{} {:?}] ",
@@ -18,7 +19,7 @@ pub unsafe fn init(_system: &mut System) {
         vga_print!("{:04X}/{:04X}", device.id.vendor, device.id.device);
 
         #[allow(irrefutable_let_patterns)]
-        if let DeviceKind::General(kind) = device.kind {
+        if let DeviceKind::General(kind) = &device.kind {
             vga_print!("/{:04X}{:04X}", kind.subsystem_id, kind.subsystem_vendor_id);
             if let Some(known_name) = kind.get_known_name(&device.id) {
                 vga_println!(": {}", known_name);
@@ -48,6 +49,12 @@ pub unsafe fn init(_system: &mut System) {
             }
         } else {
             vga_println!();
+        }
+
+        if device.id.class == DeviceClass::MassStorageController {
+            system
+                .storage
+                .register(pci_storage::PciStorage::new(device));
         }
     }
 }
