@@ -146,7 +146,7 @@ impl SegmentIndex {
             0b010 => SelectorTable::IDT,
             0b100 => SelectorTable::LDT,
             0b110 => SelectorTable::IDT,
-            _ => unsafe { core::hint::unreachable_unchecked() }
+            _ => unsafe { core::hint::unreachable_unchecked() },
         }
     }
 
@@ -166,10 +166,11 @@ impl core::fmt::Debug for SegmentIndex {
 }
 
 #[derive(Debug)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum SelectorTable {
     GDT,
     IDT,
-    LDT
+    LDT,
 }
 
 bitflags::bitflags! {

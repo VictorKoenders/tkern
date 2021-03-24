@@ -42,7 +42,7 @@ macro_rules! proxy_simple_exception_to_kernel {
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
-        proxy_simple_exception_to_kernel!(idt => 
+        proxy_simple_exception_to_kernel!(idt =>
             divide_error,
             debug,
             non_maskable_interrupt,
@@ -52,7 +52,7 @@ lazy_static! {
             invalid_opcode,
             device_not_available
         );
-        
+
         let double_fault = idt.double_fault.set_handler_fn(double_fault_handler);
         unsafe {
             double_fault.set_stack_index(DOUBLE_FAULT_IST_INDEX);
@@ -69,8 +69,8 @@ lazy_static! {
 
         idt.alignment_check.set_handler_fn(alignment_check);
         idt.machine_check.set_handler_fn(machine_check);
-        
-        proxy_simple_exception_to_kernel!(idt => 
+
+        proxy_simple_exception_to_kernel!(idt =>
             simd_floating_point,
             virtualization
         );
@@ -130,10 +130,7 @@ extern "x86-interrupt" fn double_fault_handler(
     crate::interrupts::double_fault(stack_frame.into(), error_code);
 }
 
-extern "x86-interrupt" fn invalid_tss(
-    stack_frame: &mut InterruptStackFrame,
-    error_code: u64,
-) {
+extern "x86-interrupt" fn invalid_tss(stack_frame: &mut InterruptStackFrame, error_code: u64) {
     crate::interrupts::invalid_tss(stack_frame.into(), error_code);
 }
 
@@ -165,24 +162,16 @@ extern "x86-interrupt" fn page_fault_handler(
     crate::interrupts::page_fault(stack_frame.into(), code.into());
 }
 
-extern "x86-interrupt" fn alignment_check(
-    stack_frame: &mut InterruptStackFrame,
-    code: u64,
-) {
-    crate::interrupts::alignment_check(stack_frame.into(), code.into());
+extern "x86-interrupt" fn alignment_check(stack_frame: &mut InterruptStackFrame, code: u64) {
+    crate::interrupts::alignment_check(stack_frame.into(), code);
 }
 
-extern "x86-interrupt" fn machine_check(
-    stack_frame: &mut InterruptStackFrame,
-) -> ! {
+extern "x86-interrupt" fn machine_check(stack_frame: &mut InterruptStackFrame) -> ! {
     crate::interrupts::machine_check(stack_frame.into());
 }
 
-extern "x86-interrupt" fn security_exception(
-    stack_frame: &mut InterruptStackFrame,
-    code: u64,
-) {
-    crate::interrupts::security_exception(stack_frame.into(), code.into());
+extern "x86-interrupt" fn security_exception(stack_frame: &mut InterruptStackFrame, code: u64) {
+    crate::interrupts::security_exception(stack_frame.into(), code);
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(stack_frame: &mut InterruptStackFrame) {
@@ -206,7 +195,6 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(stack_frame: &mut Interrupt
             .notify_end_of_interrupt(PicIndex::Keyboard as u8);
     }
 }
-
 
 #[allow(clippy::from_over_into)]
 impl<'a> Into<crate::interrupts::StackFrame> for &'a mut InterruptStackFrame {
