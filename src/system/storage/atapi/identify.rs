@@ -214,7 +214,10 @@ impl core::fmt::Debug for Capabilities {
         fmt.debug_struct("Capabilities")
             .field("0.0", &format_args!("{:016b}", self.0[0]))
             .field("0.1", &format_args!("{:016b}", self.0[1]))
-            .field("current_long_physical_sector_alignment", &self.current_long_physical_sector_alignment())
+            .field(
+                "current_long_physical_sector_alignment",
+                &self.current_long_physical_sector_alignment(),
+            )
             .finish()
     }
 }

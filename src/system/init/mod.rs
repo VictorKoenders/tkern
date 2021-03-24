@@ -55,12 +55,15 @@ pub fn init(system: &mut System) {
                 vga_println!();
             }
             if kind.interrupt_pin != 0 || kind.interrupt_line != 0 {
-                vga_println!("Interrupt: pin {}, line {}", kind.interrupt_pin, kind.interrupt_line);
+                vga_println!(
+                    "Interrupt: pin {}, line {}",
+                    kind.interrupt_pin,
+                    kind.interrupt_line
+                );
             }
         } else {
             vga_println!();
         }
-
 
         if device.id.class == DeviceClass::MassStorageController {
             system

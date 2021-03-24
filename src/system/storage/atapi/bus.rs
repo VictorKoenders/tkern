@@ -110,6 +110,7 @@ impl Bus {
         unsafe { port::write_u8(self.address(7), command) } // command.0) }
     }
 
+    #[allow(dead_code)]
     pub(super) fn device_control_register(&self) -> u8 {
         unsafe { port::read_u8(self.address(0x206)) }
     }
