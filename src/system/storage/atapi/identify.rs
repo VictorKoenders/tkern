@@ -13,7 +13,7 @@ pub struct Identify {
     _retired_2: [u16; 2],
     _obsolete_1: u16,
     pub firmware_revision: [u8; 8],
-    pub model_number: [u8; 40],
+    pub model_number: [u16; 20], // [u8; 40] but this doesn't implement `Default`
     pub maximum_block_transfer: u8,
     pub vendor_unique_2: u8,
     pub trusted_computing: TrustedComputing, // u16
@@ -140,19 +140,30 @@ pub struct IdentifyGeneralConfiguration(u16);
 impl IdentifyGeneralConfiguration {
     /// Indicates that the response was incomplete.
     pub fn response_incomplete(&self) -> bool {
-        (self.0 & 0b00100000_00000000) > 0
+        (self.0 & 0b00000000_00000100) > 0
     }
     /// Indicates when set to 1 that the device is fixed.
     pub fn fixed_device(&self) -> bool {
-        (self.0 & 0b00000010_00000000) > 0
+        (self.0 & 0b00000000_01000000) > 0
     }
     /// Indicates when set to 1 that the media is removable.
     pub fn removable_device(&self) -> bool {
-        (self.0 & 0b00000001_00000000) > 0
+        (self.0 & 0b00000000_10000000) > 0
     }
     /// Indicates when set to 1 that the device is an ATA device.
     pub fn is_ata(&self) -> bool {
-        (self.0 & 0b00000000_00000001) > 0
+        (self.0 & 0b10000000_00000000) > 0
+    }
+}
+
+impl core::fmt::Debug for IdentifyGeneralConfiguration {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
+        fmt.debug_struct("IdentifyGeneralConfiguration")
+            .field("response_incomplete", &self.response_incomplete())
+            .field("fixed_device", &self.fixed_device())
+            .field("removable_device", &self.removable_device())
+            .field("is_ata", &self.is_ata())
+            .finish()
     }
 }
 
@@ -161,7 +172,7 @@ pub struct TrustedComputing(u16);
 
 impl TrustedComputing {
     pub fn is_supported(&self) -> bool {
-        (self.0 & 0b10000000_00000000) > 0
+        (self.0 & 0b00000000_00000001) > 0
     }
 }
 
@@ -175,6 +186,10 @@ impl Capabilities {
 
     pub fn dma_supported(&self) -> bool {
         (self.0[0] & 0b00000000_10000000) > 0
+    }
+
+    pub fn lba48_supported(&self) -> bool {
+        (self.0[0] & 0b00000100_00000000) > 0
     }
 
     pub fn lba_supported(&self) -> bool {
@@ -191,6 +206,16 @@ impl Capabilities {
 
     pub fn standby_timer_support(&self) -> bool {
         (self.0[0] & 0b00000000_00000100) > 0
+    }
+}
+
+impl core::fmt::Debug for Capabilities {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
+        fmt.debug_struct("Capabilities")
+            .field("0.0", &format_args!("{:016b}", self.0[0]))
+            .field("0.1", &format_args!("{:016b}", self.0[1]))
+            .field("current_long_physical_sector_alignment", &self.current_long_physical_sector_alignment())
+            .finish()
     }
 }
 
@@ -371,6 +396,7 @@ impl SerialAtaFeatures {
 }
 
 #[repr(transparent)]
+#[derive(Debug)]
 pub struct CommandSet([u8; 6]);
 
 impl CommandSet {
@@ -427,6 +453,7 @@ impl CommandSet {
       USHORT WordValid : 2;
     */
 }
+
 #[repr(transparent)]
 pub struct EraseUnit(u16);
 

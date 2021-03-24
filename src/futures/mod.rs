@@ -1,12 +1,14 @@
-mod fut_id;
 pub mod io;
+pub mod time;
+
+mod fut_id;
 mod runtime_future;
 
 use self::{
     fut_id::FutId,
     runtime_future::{MaybeFut, RuntimeFuture},
 };
-use alloc::{boxed::Box, vec::Vec};
+use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use core::{
     future::Future,
     sync::atomic::{AtomicUsize, Ordering},
@@ -36,6 +38,7 @@ pub struct Runtime {
     futures: Mutex<Vec<MaybeFut>>,
     awoken_futures: Mutex<Vec<FutId>>,
     keyboard: self::io::Keyboard,
+    time: self::time::Time,
     awoken_future_count: AtomicUsize,
 }
 
@@ -58,7 +61,7 @@ impl Runtime {
         self.awoken_future_count.fetch_add(1, Ordering::Relaxed);
     }
 
-    pub fn spawn<T>(&self, future: T)
+    pub fn spawn<T>(&self, future: T) -> FutId
     where
         T: Future<Output = ()> + Send + 'static,
     {
@@ -90,6 +93,7 @@ impl Runtime {
 
         awoken_futures.push(future_id);
         self.awoken_future_count.fetch_add(1, Ordering::Relaxed);
+        future_id
     }
 
     fn drive(&self, future_id: FutId) {
@@ -111,6 +115,23 @@ impl Runtime {
         }
     }
 
+    fn drive_all(&self) -> usize {
+        let awoken_futures = {
+            let mut awoken_futures = self.awoken_futures.lock();
+            let actual_futures = core::mem::replace(&mut *awoken_futures, Vec::new());
+            // Do this here while the `self.awoken_futures` lock is still active
+            // So we make sure these 2 variables are updated in sync
+            self.awoken_future_count.store(0, Ordering::Relaxed);
+            actual_futures
+        };
+        let count = awoken_futures.len();
+        for future_id in awoken_futures {
+            self.drive(future_id);
+        }
+
+        count
+    }
+
     pub fn run<T>(&self, future: T) -> !
     where
         T: Future<Output = !> + Send + 'static,
@@ -118,22 +139,43 @@ impl Runtime {
         self.spawn(future.map(|_| ()));
 
         loop {
-            let awoken_count = self.awoken_future_count.load(Ordering::Relaxed);
-            if awoken_count == 0 {
+            let count = self.drive_all();
+            if count == 0 {
                 crate::arch::halt();
-                continue;
-            }
-            let awoken_futures = {
-                let mut awoken_futures = self.awoken_futures.lock();
-                let actual_futures = core::mem::replace(&mut *awoken_futures, Vec::new());
-                // Do this here while the `self.awoken_futures` lock is still active
-                // So we make sure these 2 variables are updated in sync
-                self.awoken_future_count.store(0, Ordering::Relaxed);
-                actual_futures
-            };
-            for future_id in awoken_futures {
-                self.drive(future_id)
             }
         }
     }
+
+    pub fn is_running(&self, future_id: FutId) -> bool {
+        let mut futures = self.futures.lock();
+        let future_status = futures.get_mut(future_id.id());
+        matches!(future_status, Some(MaybeFut::Present { future }) if future.id == future_id)
+    }
+}
+
+pub fn block_on<F, T>(f: F) -> T
+where
+    F: Future<Output = T> + Send + 'static,
+    T: Send + 'static,
+{
+    let result: Arc<Mutex<Option<T>>> = Arc::new(Mutex::new(None));
+    let result_clone = result.clone();
+    let fut_id = RUNTIME.spawn(async move {
+        let t = f.await;
+        let mut guard = result_clone.lock();
+        *guard = Some(t);
+    });
+
+    while RUNTIME.is_running(fut_id) {
+        RUNTIME.drive_all();
+    }
+    let value = match Arc::try_unwrap(result) {
+        Ok(v) => v,
+        Err(_) => {
+            panic!("Could not unwrap crate::futures::block_on value, is the other arc not dropped?")
+        }
+    };
+    value
+        .into_inner()
+        .expect("crates::future::block_on did not complete, no value was set")
 }

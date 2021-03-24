@@ -52,7 +52,7 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         allocator::init(&boot_info);
     }
 
-    /*let _system = if let Some(rsdp) = boot_info.rsdp_v2_tag() {
+    let _system = if let Some(rsdp) = boot_info.rsdp_v2_tag() {
         vga_println!("RSDP V2 at {:p}", rsdp);
         unimplemented!()
     } else if let Some(rsdp) = boot_info.rsdp_v1_tag() {
@@ -61,9 +61,13 @@ pub extern "C" fn rust_main(multiboot_information_address: usize) -> ! {
         unsafe { system::System::new(addr) }
     } else {
         panic!("Could not find rsdp, aborting");
-    };*/
+    };
+
+    vga_println!("Testing atapi..");
+    crate::system::storage::atapi::test(Some(_system.ata_bus_position));
 
     crate::futures::RUNTIME.run(async move {
+        vga_println!("Start typing now!");
         loop {
             let key = crate::futures::io::Keyboard::next_key().await;
             if key.character == 'c' && key.modifiers.ctrl_pressed {

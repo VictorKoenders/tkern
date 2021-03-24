@@ -207,7 +207,11 @@ impl GeneralDevice {
             unsafe { MaybeUninit::uninit().assume_init() };
         for (index, bar) in bars.iter_mut().enumerate() {
             let index = ((index * 4) + 0x10) as u8;
-            *bar = MaybeUninit::new(BaseAddress::read(location.with_offset(index))?);
+            let next_index = (((index + 1) * 4) + 0x10) as u8;
+            *bar = MaybeUninit::new(BaseAddress::read(
+                location.with_offset(index),
+                location.with_offset(next_index),
+            )?);
         }
         let bars: [BaseAddress; 6] = unsafe { transmute(bars) };
 

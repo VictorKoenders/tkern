@@ -14,9 +14,12 @@ pub fn test(address: Option<u16>) {
     } else {
         Bus::ata_primary()
     };
-    match identify(bus, true) {
-        Ok(_identify) => {
-            vga_println!("Ok normal identify");
+    match identify(bus) {
+        Ok(identify) => {
+            vga_println!("ATAPI Identify loaded:");
+            vga_println!("  {:?}", unsafe { &identify.config });
+            vga_println!("  {:?}", unsafe { &identify.capabilities });
+            vga_println!("  {:?}", &identify.command_set_supported);
         }
         Err(Error::BusSelect) => {
             vga_println!("Normal ATAPI did not work, trying SATA");
@@ -36,24 +39,27 @@ pub fn test(address: Option<u16>) {
     }
 }
 
-pub fn identify(bus: Bus, primary: bool) -> Result<Identify, Error> {
-    let mut inner = INNER.lock();
-    vga_println!("Testing ATAPI on bus {:?}", bus);
-    inner.drive_select(bus, if primary { 0xA0 } else { 0xB0 })?;
-    bus.set_sector_count(0);
-    bus.set_lba_low(0);
-    bus.set_lba_mid(0);
-    bus.set_lba_high(0);
+pub fn identify(bus: Bus) -> Result<Identify, Error> {
+    bus.set_drive(0xA0);
+    bus.set_sector_count(0x0);
+    bus.set_lba_low(0x0);
+    bus.set_lba_mid(0x0);
+    bus.set_lba_high(0x0);
+    bus.command(0xEC);
 
-    bus.command(bus::Command::IDENTIFY);
-    let status = inner.busy_loop(bus).as_err(bus)?;
+    loop {
+        let status = bus.status().as_err(bus)?;
+        if !status.contains(bus::Status::BUSY) || status.contains(bus::Status::READ_AVAILABLE) {
+            break;
+        }
+        crate::arch::halt();
+    }
+    let mut buffer = [0u8; 512];
+    unsafe {
+        bus.read_data(&mut buffer);
+    }
 
-    vga_println!("Status after busy loop: {:?}", status);
-
-    let bytes = [0u16; 256];
-    // TODO: read bytes
-
-    unsafe { Ok(core::mem::transmute(bytes)) }
+    unsafe { Ok(core::mem::transmute(buffer)) }
 }
 
 #[allow(dead_code)]
