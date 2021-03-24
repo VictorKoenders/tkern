@@ -8,7 +8,7 @@ pub enum BaseAddress {
     /// Address is in the memory space
     Memory {
         /// The 16-byte aligned base address
-        base_address: u32,
+        base_address: u64,
         /// When a base address register is marked as Prefetchable,
         /// it means that the region does not have read side effects (reading from that memory range doesn't change any state),
         /// and it is allowed for the CPU to cache loads from that memory region and read it in bursts (typically cache line sized).
@@ -25,25 +25,36 @@ pub enum BaseAddress {
 }
 
 impl BaseAddress {
-    pub(super) fn read(location: Location) -> Option<Self> {
+    pub(super) fn read(location: Location, next_location: Location) -> Option<Self> {
         let val = super::read_location_u32(location);
         // https://wiki.osdev.org/PCI#Base_Address_Registers
         // lowest bit indicates if this is memory or IO
 
         if val & 1 == 0 {
             // memory
+            let memory_type = if val == 0x10 {
+                MemoryType::Bits64
+            } else {
+                MemoryType::Bits32
+            };
+            let base_address = match memory_type {
+                MemoryType::Bits64 => {
+                    let next = super::read_location_u32(next_location);
+                    ((val as u64) & 0xFFFFFFF0) + (((next as u64) & 0xFFFFFFFF) << 32)
+                }
+                MemoryType::Bits32 => (val & 0xFFFFFFF0) as u64,
+            };
+
             Some(BaseAddress::Memory {
-                base_address: val >> 4,
+                base_address,
                 prefetchable: (val & 0b0100) > 0,
-                memory_type: if val == 0x10 {
-                    MemoryType::Bits64
-                } else {
-                    MemoryType::Bits32
-                },
+                memory_type,
             })
         } else {
             // IO
-            Some(BaseAddress::Io { address: val >> 2 })
+            Some(BaseAddress::Io {
+                address: val & 0xFFFFFFFC,
+            })
         }
     }
 

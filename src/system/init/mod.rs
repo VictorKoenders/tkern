@@ -32,8 +32,8 @@ pub fn init(system: &mut System) {
             }
 
             let mut any_address = false;
-            for (index, bar) in kind.bars.iter().filter(|b| !b.is_null()).enumerate() {
-                if index == 0 {
+            for (index, bar) in kind.bars.iter().enumerate().filter(|(_, b)| !b.is_null()) {
+                if !any_address {
                     vga_print!("Base address: ");
                     any_address = true;
                 } else {
@@ -41,19 +41,26 @@ pub fn init(system: &mut System) {
                 }
                 match bar {
                     BaseAddress::Io { address } => {
-                        vga_print!("Io(0x{:X})", address);
+                        vga_print!("[{}] Io(0x{:X})", index, address);
+                        if device.id.class == DeviceClass::SerialBusController {
+                            system.ata_bus_position = *address as u16;
+                        }
                     }
                     BaseAddress::Memory { base_address, .. } => {
-                        vga_print!("Memory(0x{:X})", base_address)
+                        vga_print!("[{}] Memory(0x{:X})", index, base_address)
                     }
                 }
             }
             if any_address {
                 vga_println!();
             }
+            if kind.interrupt_pin != 0 || kind.interrupt_line != 0 {
+                vga_println!("Interrupt: pin {}, line {}", kind.interrupt_pin, kind.interrupt_line);
+            }
         } else {
             vga_println!();
         }
+
 
         if device.id.class == DeviceClass::MassStorageController {
             system

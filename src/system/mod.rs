@@ -24,6 +24,8 @@ pub struct System {
     pub(self) descriptor: Descriptor,
     pub(self) memory: Memory,
     pub(self) storage: SystemStorage,
+
+    pub ata_bus_position: u16,
 }
 
 impl Drop for System {
@@ -48,6 +50,7 @@ impl System {
             descriptor,
             memory,
             storage: SystemStorage::new(),
+            ata_bus_position: 0x1F0,
         };
         init::init(&mut system);
         system

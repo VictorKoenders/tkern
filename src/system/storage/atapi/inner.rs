@@ -1,5 +1,5 @@
 use super::{
-    bus::{Bus, Command, Features, Status},
+    bus::{Bus, Features, Status},
     Error,
 };
 
@@ -32,21 +32,21 @@ impl Inner {
         bus.features(Features::NONE); // PIO mode
         bus.set_lba_mid((SECTOR_SIZE & 0xFF) as u8);
         bus.set_lba_high((SECTOR_SIZE >> 8) as u8);
-        bus.command(Command::ATA_PACKET);
+        // bus.command(Command::ATA_PACKET);
 
         self.busy_loop(bus).as_err(bus)?;
         self.drive = drive;
         Ok(())
     }
 
-    fn select_delay(&self, bus: Bus) -> Status {
+    pub fn select_delay(&self, bus: Bus) -> Status {
         // need to sleep for 400 ns
         // each status read is roughly 100ns, so we read 5 times, and return the last status
         let mut i = 0;
         loop {
             let status = bus.status();
             i += 1;
-            if i == 5 {
+            if i == 10 {
                 break status;
             }
         }
@@ -56,6 +56,7 @@ impl Inner {
         // first we loop on BUSY
         while bus.status().contains(Status::BUSY) {
             core::hint::spin_loop();
+            crate::arch::halt();
         }
 
         // Then we loop on BUSY and !ERR
@@ -64,6 +65,7 @@ impl Inner {
             if !status.contains(Status::BUSY) || status.contains(Status::ERROR) {
                 return status;
             }
+            crate::arch::halt();
             core::hint::spin_loop();
         }
     }
