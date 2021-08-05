@@ -2,7 +2,7 @@
 
 use crate::VirtualAddress;
 
-#[repr(C)]
+#[repr(packed)]
 #[derive(Debug, Clone, Copy)]
 /// The common header of any System Descriptor Table
 pub struct Header {

@@ -2,8 +2,11 @@
 
 use crate::VirtualAddress;
 use lazy_static::lazy_static;
-use pic8259_simple::ChainedPics;
-pub use x86_64::instructions::interrupts::{disable, enable, without_interrupts};
+use pic8259::ChainedPics;
+pub use x86_64::instructions::{
+    interrupts::{disable, enable, without_interrupts},
+    segmentation::Segment,
+};
 use x86_64::{
     structures::{
         gdt::{Descriptor, GlobalDescriptorTable, SegmentSelector},
@@ -13,9 +16,22 @@ use x86_64::{
     VirtAddr,
 };
 
+pub type CustomInterruptFn = extern "x86-interrupt" fn(InterruptStackFrame);
+
 const PIC_1_OFFSET: u8 = 32;
 const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
 
+// #[macro_use]
+macro_rules! custom_interrupt {
+    (fn $name:ident ( $stack_frame: ident : StackFrame) $block:block) => {
+        pub extern "x86-interrupt" fn $name(frame: x86_64::structures::idt::InterruptStackFrame) {
+            let mut frame: StackFrame = frame.into();
+            let $stack_frame = &mut frame;
+
+            $block
+        }
+    };
+}
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 enum PicIndex {
@@ -31,7 +47,7 @@ const DOUBLE_FAULT_IST_INDEX: u16 = 0;
 macro_rules! proxy_simple_exception_to_kernel {
     ($idt:expr => $($err:tt),*) => {
         $(
-            extern "x86-interrupt" fn $err(stack_frame: &mut InterruptStackFrame) {
+            extern "x86-interrupt" fn $err(stack_frame: InterruptStackFrame) {
                 crate::interrupts::$err(stack_frame.into());
             }
             $idt.$err.set_handler_fn($err);
@@ -39,9 +55,11 @@ macro_rules! proxy_simple_exception_to_kernel {
     };
 }
 
-lazy_static! {
-    static ref IDT: InterruptDescriptorTable = {
-        let mut idt = InterruptDescriptorTable::new();
+static mut IDT: InterruptDescriptorTable = InterruptDescriptorTable::new();
+
+unsafe fn init_idt() {
+    fn init_idt_inner() {
+        let idt = unsafe { &mut IDT };
         proxy_simple_exception_to_kernel!(idt =>
             divide_error,
             debug,
@@ -78,8 +96,12 @@ lazy_static! {
 
         idt[PicIndex::Timer as usize].set_handler_fn(timer_interrupt_handler);
         idt[PicIndex::Keyboard as usize].set_handler_fn(keyboard_interrupt_handler);
-        idt
-    };
+
+        idt.load();
+    }
+    init_idt_inner();
+}
+lazy_static! {
     static ref TSS: TaskStateSegment = {
         let mut tss = TaskStateSegment::new();
         tss.interrupt_stack_table[DOUBLE_FAULT_IST_INDEX as usize] = {
@@ -116,65 +138,66 @@ struct Selectors {
 pub fn init() {
     GDT.0.load();
     unsafe {
-        x86_64::instructions::segmentation::set_cs(GDT.1.code_selector);
+        x86_64::instructions::segmentation::CS::set_reg(GDT.1.code_selector);
         x86_64::instructions::tables::load_tss(GDT.1.tss_selector);
+        init_idt();
     }
-    IDT.load();
     unsafe { PICS.lock().initialize() };
 }
 
+pub unsafe fn register_custom_interrupt(interrupt_id: u16, handler: CustomInterruptFn) {
+    IDT[interrupt_id as usize]
+        .set_handler_fn(handler)
+        .set_present(true);
+    IDT.load();
+}
+
 extern "x86-interrupt" fn double_fault_handler(
-    stack_frame: &mut InterruptStackFrame,
+    stack_frame: InterruptStackFrame,
     error_code: u64,
 ) -> ! {
     crate::interrupts::double_fault(stack_frame.into(), error_code);
 }
 
-extern "x86-interrupt" fn invalid_tss(stack_frame: &mut InterruptStackFrame, error_code: u64) {
+extern "x86-interrupt" fn invalid_tss(stack_frame: InterruptStackFrame, error_code: u64) {
     crate::interrupts::invalid_tss(stack_frame.into(), error_code);
 }
 
-extern "x86-interrupt" fn segment_not_present(
-    stack_frame: &mut InterruptStackFrame,
-    error_code: u64,
-) {
+extern "x86-interrupt" fn segment_not_present(stack_frame: InterruptStackFrame, error_code: u64) {
     crate::interrupts::segment_not_present(stack_frame.into(), error_code.into());
 }
 
-extern "x86-interrupt" fn stack_segment_fault(
-    stack_frame: &mut InterruptStackFrame,
-    error_code: u64,
-) {
+extern "x86-interrupt" fn stack_segment_fault(stack_frame: InterruptStackFrame, error_code: u64) {
     crate::interrupts::stack_segment_fault(stack_frame.into(), error_code.into());
 }
 
 extern "x86-interrupt" fn general_protection_fault_handler(
-    stack_frame: &mut InterruptStackFrame,
+    stack_frame: InterruptStackFrame,
     code: u64,
 ) {
     crate::interrupts::general_protection(stack_frame.into(), code);
 }
 
 extern "x86-interrupt" fn page_fault_handler(
-    stack_frame: &mut InterruptStackFrame,
+    stack_frame: InterruptStackFrame,
     code: PageFaultErrorCode,
 ) {
     crate::interrupts::page_fault(stack_frame.into(), code.into());
 }
 
-extern "x86-interrupt" fn alignment_check(stack_frame: &mut InterruptStackFrame, code: u64) {
+extern "x86-interrupt" fn alignment_check(stack_frame: InterruptStackFrame, code: u64) {
     crate::interrupts::alignment_check(stack_frame.into(), code);
 }
 
-extern "x86-interrupt" fn machine_check(stack_frame: &mut InterruptStackFrame) -> ! {
+extern "x86-interrupt" fn machine_check(stack_frame: InterruptStackFrame) -> ! {
     crate::interrupts::machine_check(stack_frame.into());
 }
 
-extern "x86-interrupt" fn security_exception(stack_frame: &mut InterruptStackFrame, code: u64) {
+extern "x86-interrupt" fn security_exception(stack_frame: InterruptStackFrame, code: u64) {
     crate::interrupts::security_exception(stack_frame.into(), code);
 }
 
-extern "x86-interrupt" fn timer_interrupt_handler(stack_frame: &mut InterruptStackFrame) {
+extern "x86-interrupt" fn timer_interrupt_handler(stack_frame: InterruptStackFrame) {
     crate::interrupts::timer_interrupt(stack_frame.into());
 
     unsafe {
@@ -182,7 +205,7 @@ extern "x86-interrupt" fn timer_interrupt_handler(stack_frame: &mut InterruptSta
     }
 }
 
-extern "x86-interrupt" fn keyboard_interrupt_handler(stack_frame: &mut InterruptStackFrame) {
+extern "x86-interrupt" fn keyboard_interrupt_handler(stack_frame: InterruptStackFrame) {
     use x86_64::instructions::port::Port;
 
     let mut port = Port::new(0x60);
@@ -197,7 +220,7 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(stack_frame: &mut Interrupt
 }
 
 #[allow(clippy::from_over_into)]
-impl<'a> Into<crate::interrupts::StackFrame> for &'a mut InterruptStackFrame {
+impl Into<crate::interrupts::StackFrame> for InterruptStackFrame {
     fn into(self) -> crate::interrupts::StackFrame {
         crate::interrupts::StackFrame {
             instruction_pointer: VirtualAddress(self.instruction_pointer.as_u64()),

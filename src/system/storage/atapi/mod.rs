@@ -2,6 +2,9 @@ mod bus;
 pub mod identify;
 mod inner;
 
+use crate::interrupts::StackFrame;
+use core::num::NonZeroU16;
+
 #[allow(dead_code)]
 pub const SECTOR_SIZE: usize = 2048;
 pub use self::bus::Bus;
@@ -9,6 +12,7 @@ pub use self::bus::Bus;
 use self::{identify::Identify, inner::INNER};
 
 pub fn test(address: Option<u16>) {
+    crate::interrupts::register_custom_interrupt(NonZeroU16::new(92).unwrap(), atapi_interrupt);
     let bus = if let Some(a) = address {
         unsafe { Bus::new(a) }
     } else {
@@ -17,9 +21,9 @@ pub fn test(address: Option<u16>) {
     match identify(bus) {
         Ok(identify) => {
             vga_println!("ATAPI Identify loaded:");
-            vga_println!("  {:?}", unsafe { &identify.config });
-            vga_println!("  {:?}", unsafe { &identify.capabilities });
-            vga_println!("  {:?}", &identify.command_set_supported);
+            vga_println!("  {:?}", &{ identify.config });
+            vga_println!("  {:?}", &{ identify.capabilities });
+            vga_println!("  {:?}", &{ identify.command_set_supported });
         }
         Err(Error::BusSelect) => {
             vga_println!("Normal ATAPI did not work, trying SATA");
@@ -59,7 +63,21 @@ pub fn identify(bus: Bus) -> Result<Identify, Error> {
         bus.read_data(&mut buffer);
     }
 
+    let interrupt_id = crate::interrupts::consume_last_unknown_interrupt_id();
+    vga_println!("ATAPI interrupt is at ID {:?}", interrupt_id);
+    if let Some(interrupt_id) = interrupt_id {
+        crate::interrupts::register_custom_interrupt(interrupt_id, atapi_interrupt);
+    }
+    let interrupt_id = crate::interrupts::consume_last_unknown_interrupt_id();
+    vga_println!("ATAPI interrupt now is at ID {:?}", interrupt_id);
+
     unsafe { Ok(core::mem::transmute(buffer)) }
+}
+
+custom_interrupt! {
+    fn atapi_interrupt(_stack_frame: StackFrame) {
+        vga_println!("ATAPI interrupt triggered");
+    }
 }
 
 #[allow(dead_code)]

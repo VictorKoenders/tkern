@@ -13,9 +13,9 @@ pub enum Fadt<'a> {
 impl Fadt<'_> {
     pub fn header(&self) -> &Header {
         match self {
-            Fadt::V1(v1) => unsafe { &v1.header },
-            Fadt::V2(v2) => unsafe { &v2.v1.header },
-            Fadt::V3(v3) => unsafe { &v3.v2.v1.header },
+            Fadt::V1(v1) => &v1.header,
+            Fadt::V2(v2) => &v2.v1.header,
+            Fadt::V3(v3) => &v3.v2.v1.header,
         }
     }
     pub fn virtual_address(&self) -> VirtualAddress {

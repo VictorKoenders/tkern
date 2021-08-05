@@ -93,7 +93,7 @@ impl Descriptor {
             partial
                 .processors
                 .iter()
-                .filter(|p| p.flags.contains(apic::ProcessorFlags::ENABLED))
+                .filter(|p| { p.flags }.contains(apic::ProcessorFlags::ENABLED))
                 .count()
         );
 

@@ -3,8 +3,14 @@
 //! These interrupts get called from the arch/xxx/interrupts.rs module
 
 use crate::VirtualAddress;
+use core::{
+    num::NonZeroU16,
+    sync::atomic::{AtomicU16, Ordering},
+};
 
 pub mod io;
+
+static LAST_UNKNOWN_INTERRUPT_ID: AtomicU16 = AtomicU16::new(0);
 
 /// Called when a divide error occurs
 pub fn divide_error(stack_frame: StackFrame) {
@@ -54,9 +60,25 @@ pub fn invalid_tss(stack_frame: StackFrame, code: u64) {
     vga_println!("EXCEPTION: INVALID TSS {:?}\n{:#?}", code, stack_frame);
 }
 
+pub fn register_custom_interrupt(
+    id: NonZeroU16,
+    interrupt_fn: crate::arch::interrupts::CustomInterruptFn,
+) {
+    unsafe {
+        crate::arch::interrupts::register_custom_interrupt(id.get(), interrupt_fn);
+    }
+}
+
 pub fn segment_not_present(_stack_frame: StackFrame, index: SegmentIndex) {
     vga_println!("Segment not present:");
     vga_println!("  index: {:?}", index);
+    if !index.is_external() && index.table() == SelectorTable::IDT {
+        LAST_UNKNOWN_INTERRUPT_ID.store(index.index(), Ordering::Relaxed);
+    }
+}
+
+pub fn consume_last_unknown_interrupt_id() -> Option<NonZeroU16> {
+    NonZeroU16::new(LAST_UNKNOWN_INTERRUPT_ID.swap(0, Ordering::Relaxed))
 }
 
 pub fn stack_segment_fault(_stack_frame: StackFrame, index: SegmentIndex) {
@@ -165,7 +187,7 @@ impl core::fmt::Debug for SegmentIndex {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 #[allow(clippy::upper_case_acronyms)]
 pub enum SelectorTable {
     GDT,

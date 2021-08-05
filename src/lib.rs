@@ -19,8 +19,9 @@ extern crate alloc;
 pub mod vga;
 #[macro_use]
 pub mod utils;
-pub mod allocator;
+#[macro_use]
 pub mod arch;
+pub mod allocator;
 pub mod dev_utils;
 pub mod futures;
 pub mod interrupts;
