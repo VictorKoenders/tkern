@@ -57,11 +57,11 @@ pub struct McfgEntry {
 impl core::fmt::Debug for McfgEntry {
     fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::fmt::Result {
         fmt.debug_struct("McfgEntry")
-            .field("base_address", unsafe {
-                &format_args!("0x{:08X}", self.base_address)
+            .field("base_address", {
+                &format_args!("0x{:08X}", { self.base_address })
             })
-            .field("pci_segment_group_number", unsafe {
-                &self.pci_segment_group_number
+            .field("pci_segment_group_number", &{
+                self.pci_segment_group_number
             })
             .field("start_pci_bus_number", &self.start_pci_bus_number)
             .field("end_pci_bus_number", &self.end_pci_bus_number)

@@ -5,13 +5,13 @@ target ?= $(arch)-target
 opt_level ?= debug
 rust_os := target/$(target)/${opt_level}/libtkern.a
 hdd_img := build/hdd.img
-# qemu_default_args := -cdrom $(iso) -m 5G -smp 4 -drive file=$(hdd_img),format=raw \
-#	-boot d -vga qxl -device isa-debug-exit,iobase=0xf4,iosize=0x04 -M q35 
 
 qemu_default_args := -cdrom $(iso) -serial mon:stdio -gdb tcp::25000 -D qemu.log \
 	-D /dev/stdout -smp 4 -hda $(hdd_img) \
-	-device isa-debug-exit,iobase=0xf4,iosize=0x04
-
+	-device isa-debug-exit,iobase=0xf4,iosize=0x04 \
+	-device ich9-intel-hda -device hda-duplex \
+	-net nic,model=e1000 -net user -device nec-usb-xhci,id=xhci -device usb-tablet,bus=xhci.0  \
+	-enable-kvm -cpu host -d cpu_reset -d guest_errors -m 1024 -machine q35
 
 linker_script := arch/$(arch)/linker.ld
 grub_cfg := arch/$(arch)/grub.cfg

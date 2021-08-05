@@ -24,7 +24,7 @@ impl Madt {
 
     /// Iterates over the devices in the MADT table
     pub fn interrupt_devices(&self, allocator: &TableAllocator) -> InterruptDeviceIterator {
-        allocator.ensure_loaded(unsafe { self.header.virtual_address_range() });
+        allocator.ensure_loaded(self.header.virtual_address_range());
         let end_of_madt = self as *const Madt as usize + core::mem::size_of::<Madt>();
         let remaining_length = self.header.length as usize - core::mem::size_of::<Madt>();
         let slice =

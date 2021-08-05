@@ -12,8 +12,8 @@ pub struct Dsdt {
 impl Dsdt {
     /// Read the AML code from memory
     pub fn read<'a>(&self, allocator: &'a TableAllocator) -> &'a [u8] {
-        let len = unsafe { self.header.bytes_len_after_header() };
-        let ptr = unsafe { self.header.ptr_after_header() };
+        let len = { self.header.bytes_len_after_header() };
+        let ptr = { self.header.ptr_after_header() };
         let self_addr = VirtualAddress(ptr as usize as u64);
 
         let (mut physical, end_of_mapping) = allocator

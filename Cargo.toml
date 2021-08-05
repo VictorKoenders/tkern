@@ -6,12 +6,12 @@ authors = ["Victor Koenders <victor.koenders@gmail.com>"]
 
 [dependencies]
 volatile = "0.3"
-spin = "0.7"
-multiboot2 = "0.10"
+spin = "0.9"
+multiboot2 = "0.11"
 bitflags = "1.2"
-x86_64 = "0.13"
-cortex-a = "5.1"
-pic8259_simple = "0.2"
+x86_64 = "0.14"
+cortex-a = "6.0"
+pic8259 = "0.10.1"
 pc-keyboard = "0.5"
 pin-project-lite = "0.2"
 cooked-waker = "5.0"
@@ -27,7 +27,7 @@ features = ["union", "const_generics", "specialization"]
 [dependencies.crossbeam]
 version = "0.8"
 default_features = false
-features = ["alloc"]
+# features = ["alloc"]
 
 [dependencies.lazy_static]
 version = "1.4"

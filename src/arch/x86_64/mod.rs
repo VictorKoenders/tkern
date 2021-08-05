@@ -4,6 +4,7 @@ use x86_64::{
     VirtAddr,
 };
 
+#[macro_use]
 pub mod interrupts;
 pub mod port;
 

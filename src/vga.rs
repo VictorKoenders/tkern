@@ -55,7 +55,7 @@ impl ColorCode {
 
 /// A screen character in the VGA text buffer, consisting of an ASCII character and a `ColorCode`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(C)]
+#[repr(packed)]
 struct ScreenChar {
     ascii_character: u8,
     color_code: ColorCode,

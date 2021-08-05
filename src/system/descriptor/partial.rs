@@ -40,11 +40,11 @@ impl<'a> Table<'a> {
     /// Get the header of any system descriptor table
     pub fn header(&self) -> &Header {
         match self {
-            Self::Root(r) => unsafe { &r.header },
+            Self::Root(r) => &r.header,
             Self::Fadt(fadt) => fadt.header(),
-            Self::Madt(madt) => unsafe { &madt.header },
-            Self::Hpet(hpet) => unsafe { &hpet.header },
-            Self::Mcfg(mcfg) => unsafe { &mcfg.header },
+            Self::Madt(madt) => &madt.header,
+            Self::Hpet(hpet) => &hpet.header,
+            Self::Mcfg(mcfg) => &mcfg.header,
             Self::Unknown(h) => &h,
         }
     }

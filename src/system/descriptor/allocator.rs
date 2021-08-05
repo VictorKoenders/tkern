@@ -37,7 +37,7 @@ impl TableAllocator {
             table.header().is_valid(),
             "Table {:?} (len {}) is not valid",
             table,
-            header.length
+            { header.length }
         );
         if !table.has_trailing_bytes() {
             assert_eq!(
@@ -45,7 +45,7 @@ impl TableAllocator {
                 table.mem_size(),
                 "Table {:?} (len {}) length is not valid",
                 table,
-                header.length
+                { header.length }
             );
         }
         table
