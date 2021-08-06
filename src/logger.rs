@@ -14,42 +14,67 @@ static LOGGER: OnceCell<LockedLogger> = OnceCell::uninit();
 struct LockedLogger(Spinlock<Logger>);
 
 /// Additional vertical space between lines
-const LINE_SPACING: usize = 0;
-/// Additional vertical space between separate log messages
-const LOG_SPACING: usize = 2;
+const LINE_SPACING: usize = 2;
 
-struct Color {
+#[derive(Clone, Copy, Debug)]
+pub struct Color {
     r: u8,
     g: u8,
     b: u8,
 }
 
 impl Color {
-    fn magenta() -> Self {
+    pub fn magenta() -> Self {
         Self {
             r: 255,
             g: 0,
             b: 255,
         }
     }
-    fn blue() -> Self {
-        Self { r: 0, g: 0, b: 255 }
+    pub fn blue() -> Self {
+        Self {
+            r: 0,
+            g: 255,
+            b: 255,
+        }
     }
-    fn green() -> Self {
+    pub fn green() -> Self {
         Self { r: 0, g: 255, b: 0 }
     }
-    fn yellow() -> Self {
+    pub fn yellow() -> Self {
         Self {
             r: 255,
             g: 255,
             b: 0,
         }
     }
-    fn red() -> Self {
+    pub fn red() -> Self {
         Self { r: 255, g: 0, b: 0 }
     }
-    fn white() -> Self {
-        Self { r: 255, g: 255, b: 255 }
+    pub fn white() -> Self {
+        Self {
+            r: 255,
+            g: 255,
+            b: 255,
+        }
+    }
+
+    fn with_intensity(self, intensity: u8) -> Self {
+        let merge = |color: u8| -> u8 {
+            ((color as u16) * (intensity as u16) / (u8::max_value() as u16)) as u8
+        };
+        Self {
+            r: merge(self.r),
+            g: merge(self.g),
+            b: merge(self.b),
+        }
+    }
+
+    fn to_rgba(self, alpha: u8) -> [u8; 4] {
+        [self.r, self.g, self.b, alpha]
+    }
+    fn to_bgra(self, alpha: u8) -> [u8; 4] {
+        [self.b, self.g, self.r, alpha]
     }
 }
 
@@ -59,6 +84,14 @@ pub fn init(framebuffer: &'static mut FrameBuffer) {
     log::set_logger(logger).expect("logger already set");
     log::set_max_level(log::LevelFilter::Trace);
     log::info!("Framebuffer info: {:?}", logger.info());
+}
+
+pub fn get<F, T>(cb: F) -> T
+where
+    F: FnOnce(&Logger) -> T,
+{
+    let lock = LOGGER.get().unwrap().0.lock();
+    cb(&*lock)
 }
 
 impl LockedLogger {
@@ -96,18 +129,17 @@ impl log::Log for LockedLogger {
         write!(logger, "{:^5}: ", record.level()).unwrap();
         logger.set_color(Color::white());
         writeln!(logger, "{}", record.args()).unwrap();
-        logger.add_vspace(LOG_SPACING);
     }
 
     fn flush(&self) {}
 }
 
 /// Allows logging text to a pixel-based framebuffer.
-struct Logger {
-    framebuffer: &'static mut FrameBuffer,
-    x_pos: usize,
-    y_pos: usize,
-    color: Color,
+pub struct Logger {
+    pub framebuffer: &'static mut FrameBuffer,
+    pub x_pos: usize,
+    pub y_pos: usize,
+    pub color: Color,
 }
 
 impl Logger {
@@ -132,9 +164,9 @@ impl Logger {
         self.carriage_return()
     }
 
-    fn add_vspace(&mut self, space: usize) {
-        self.y_pos += space;
-    }
+    //fn add_vspace(&mut self, space: usize) {
+    //    self.y_pos += space;
+    //}
 
     fn carriage_return(&mut self) {
         self.x_pos = 0;
@@ -145,6 +177,12 @@ impl Logger {
         self.x_pos = 0;
         self.y_pos = 0;
         self.framebuffer.buffer_mut().fill(0);
+    }
+
+    fn scroll_up(&mut self, amount: usize) {
+        let info = self.info();
+        let offset = info.stride * info.bytes_per_pixel * amount;
+        self.framebuffer.buffer_mut().copy_within(offset.., 0);
     }
 
     fn width(&self) -> usize {
@@ -167,8 +205,11 @@ impl Logger {
                 if self.x_pos >= self.width() {
                     self.newline();
                 }
-                if self.y_pos >= (self.height() - 8) {
-                    self.clear();
+                const LINE_HEIGHT: usize = LINE_SPACING + 8;
+                if self.y_pos >= (self.height() - LINE_HEIGHT) {
+                    let new_y = self.height() - LINE_HEIGHT;
+                    self.scroll_up(self.y_pos - new_y);
+                    self.y_pos = new_y;
                 }
                 let rendered = font8x8::BASIC_FONTS
                     .get(c)
@@ -190,18 +231,13 @@ impl Logger {
 
     fn write_pixel(&mut self, x: usize, y: usize, intensity: u8) {
         let pixel_offset = y * self.info().stride + x;
+        let color = self.color.with_intensity(intensity);
         let color = match self.info().pixel_format {
-            PixelFormat::RGB => [intensity, intensity, intensity, 0],
-            PixelFormat::BGR => [intensity, intensity, intensity, 0],
+            PixelFormat::RGB => color.to_rgba(0),
+            PixelFormat::BGR => color.to_bgra(0),
             PixelFormat::U8 => [if intensity > 200 { 0xf } else { 0 }, 0, 0, 0],
             _ => unimplemented!(),
         };
-        let color = [
-            ((color[0] as u16) * (self.color.r as u16) / (u8::max_value() as u16)) as u8,
-            ((color[1] as u16) * (self.color.g as u16) / (u8::max_value() as u16)) as u8,
-            ((color[2] as u16) * (self.color.b as u16) / (u8::max_value() as u16)) as u8,
-            color[3],
-        ];
 
         let bytes_per_pixel = self.info().bytes_per_pixel;
         let byte_offset = pixel_offset * bytes_per_pixel;
