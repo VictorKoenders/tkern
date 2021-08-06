@@ -7,7 +7,7 @@ authors = ["Victor Koenders <victor.koenders@gmail.com>"]
 [dependencies]
 volatile = "0.3"
 spin = "0.7"
-multiboot2 = "0.10"
+multiboot2 = "0.11"
 bitflags = "1.2"
 x86_64 = "0.13"
 # cortex-a = "5.1"
