@@ -73,7 +73,7 @@ dependencies = [
  "pc-keyboard",
  "pic8259_simple",
  "spin 0.7.1",
- "volatile",
+ "volatile 0.3.0",
  "x86_64",
 ]
 
@@ -84,11 +84,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8e76fae08f03f96e166d2dfda232190638c10e0383841252416f9cfe2ae60e6"
 
 [[package]]
-name = "x86_64"
-version = "0.13.1"
+name = "volatile"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d74944372d63f31dd39fce1ef8036143484ff4cd4efcd743ef50135839de4e7"
+checksum = "e4c2dbd44eb8b53973357e6e207e370f0c1059990df850aca1eca8947cf464f0"
+
+[[package]]
+name = "x86_64"
+version = "0.14.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d95947de37ad0d2d9a4a4dd22e0d042e034e5cbd7ab53edbca0d8035e0a6a64d"
 dependencies = [
  "bit_field",
  "bitflags",
+ "volatile 0.4.4",
 ]
