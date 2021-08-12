@@ -5,7 +5,7 @@ edition = "2018"
 authors = ["Victor Koenders <victor.koenders@gmail.com>"]
 
 [dependencies]
-volatile = "0.3"
+volatile = "0.4"
 spin = "0.9"
 multiboot2 = "0.11"
 bitflags = "1.3"

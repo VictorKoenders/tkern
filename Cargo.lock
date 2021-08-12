@@ -219,7 +219,7 @@ dependencies = [
  "pin-project-lite",
  "smallvec",
  "spin 0.9.2",
- "volatile 0.3.0",
+ "volatile",
  "x86_64",
 ]
 
@@ -228,12 +228,6 @@ name = "tock-registers"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ee8fba06c1f4d0b396ef61a54530bb6b28f0dc61c38bc8bc5a5a48161e6282e"
-
-[[package]]
-name = "volatile"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8e76fae08f03f96e166d2dfda232190638c10e0383841252416f9cfe2ae60e6"
 
 [[package]]
 name = "volatile"
@@ -249,5 +243,5 @@ checksum = "d95947de37ad0d2d9a4a4dd22e0d042e034e5cbd7ab53edbca0d8035e0a6a64d"
 dependencies = [
  "bit_field",
  "bitflags",
- "volatile 0.4.4",
+ "volatile",
 ]
