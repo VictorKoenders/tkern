@@ -21,7 +21,7 @@ version = "0.3"
 default_features = false
 
 [dependencies.smallvec]
-version = "1.4"
+version = "1.8"
 features = ["union", "const_generics", "specialization"]
 
 [dependencies.crossbeam]
