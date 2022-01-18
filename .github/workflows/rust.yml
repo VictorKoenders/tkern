@@ -18,7 +18,12 @@ jobs:
         toolchain: nightly
         override: true
         components: rust-src, rustfmt, clippy
-        
+    
+    - name: Install cargo-binutils
+      uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-binutils
+
     - name: Check formatting
       uses: actions-rs/cargo@v1
       with:
