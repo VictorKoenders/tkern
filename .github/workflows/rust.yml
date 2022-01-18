@@ -1,0 +1,38 @@
+on: [push, pull_request]
+
+name: Rust
+
+jobs:
+  lint:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        override: true
+        components: rust-src, rustfmt, clippy
+        
+    - name: Check formatting
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path runner/Cargo.toml -- --check
+
+    - name: Check formatting
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path kernel/Cargo.toml -- --check
+
+    - name: Build
+      uses: actions-rs/cargo@v1
+      with:
+        command: run
+        args: --manifest-path runner/Cargo.toml -- build

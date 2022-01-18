@@ -43,7 +43,7 @@ pub fn main() {
         Args::Clean => {
             let mut cmd = Command::new("cargo");
             cmd.arg("clean");
-            cmd.current_dir(kernel::DIR);
+            cmd.current_dir(kernel::find_dir());
             utils::run(cmd)
         },
         Args::Objdump { gcc_aarch_path} => {
@@ -55,7 +55,7 @@ pub fn main() {
 pub fn run_qemu(kernel_path: &str) {
     let mut cmd = Command::new("qemu-system-aarch64");
     cmd.args(&["-M", "raspi3", "-serial", "stdio", "-display", "none", "-kernel", kernel_path]);
-    cmd.current_dir(kernel::DIR);
+    cmd.current_dir(kernel::find_dir());
     utils::run(cmd);
 }
 
@@ -93,6 +93,6 @@ fn objdump(gcc_aarch_path: &Option<PathBuf>)  {
             "--section", ".got",
             &kernel_path
         ]);
-    cmd.current_dir(kernel::DIR);
+    cmd.current_dir(kernel::find_dir());
     utils::run(cmd);
 }
