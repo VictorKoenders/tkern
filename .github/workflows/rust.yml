@@ -3,8 +3,32 @@ on: [push, pull_request]
 name: Rust
 
 jobs:
-  lint:
+  build:
     name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        override: true
+        components: rustfmt, clippy
+ 
+    - name: Install cargo-binutils
+      uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-binutils
+
+    - name: Build
+      uses: actions-rs/cargo@v1
+      with:
+        command: run
+        args: -- build
+
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
 
     steps:
@@ -17,12 +41,7 @@ jobs:
         profile: minimal
         toolchain: nightly
         override: true
-        components: rust-src, rustfmt, clippy
-    
-    - name: Install cargo-binutils
-      uses: actions-rs/install@v0.1
-      with:
-        crate: cargo-binutils
+        components: rustfmt, clippy
 
     - name: Check formatting
       uses: actions-rs/cargo@v1
@@ -36,8 +55,3 @@ jobs:
         command: clippy
         args: --workspace -- -D warnings
     
-    - name: Build
-      uses: actions-rs/cargo@v1
-      with:
-        command: run
-        args: -- build
