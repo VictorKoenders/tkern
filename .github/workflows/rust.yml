@@ -17,7 +17,7 @@ jobs:
         profile: minimal
         toolchain: nightly
         override: true
-        components: rustfmt, clippy
+        components: rust-src
     
     - name: Install packages
       run: sudo apt install gcc-arm-none-eabi -y
