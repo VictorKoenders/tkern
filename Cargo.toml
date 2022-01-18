@@ -1,0 +1,7 @@
+[workspace]
+members = [
+	"kernel",
+	"runner"
+]
+
+default-members = ["runner"]
