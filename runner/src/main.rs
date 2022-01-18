@@ -4,7 +4,8 @@ use structopt::StructOpt;
 mod kernel;
 
 pub fn gcc_aarch_path() -> String {
-    std::env::var("GCC_AARCH_PATH").unwrap_or_else(|_| String::from("C:/tools/gcc-arm-aarch64-none-elf"))
+    std::env::var("GCC_AARCH_PATH")
+        .unwrap_or_else(|_| String::from("C:/tools/gcc-arm-aarch64-none-elf"))
 }
 
 #[derive(StructOpt, Debug)]
@@ -27,26 +28,22 @@ pub enum Args {
 
 pub fn main() {
     match Args::from_args() {
-        Args::Build {
-            release
-        } => {
+        Args::Build { release } => {
             let out = kernel::build(release);
             kernel::objcopy(&out, "target/kernel.img");
-        },
-        Args::RunQemu {
-            release
-        } => {
+        }
+        Args::RunQemu { release } => {
             let out = kernel::build(release);
             kernel::objcopy(&out, "target/kernel.img");
             run_qemu("target/kernel.img");
-        },
+        }
         Args::Clean => {
             let mut cmd = Command::new("cargo");
             cmd.arg("clean");
             cmd.current_dir(kernel::find_dir());
             utils::run(cmd)
-        },
-        Args::Objdump { gcc_aarch_path} => {
+        }
+        Args::Objdump { gcc_aarch_path } => {
             objdump(&gcc_aarch_path);
         }
     }
@@ -54,7 +51,16 @@ pub fn main() {
 
 pub fn run_qemu(kernel_path: &str) {
     let mut cmd = Command::new("qemu-system-aarch64");
-    cmd.args(&["-M", "raspi3", "-serial", "stdio", "-display", "none", "-kernel", kernel_path]);
+    cmd.args(&[
+        "-M",
+        "raspi3",
+        "-serial",
+        "stdio",
+        "-display",
+        "none",
+        "-kernel",
+        kernel_path,
+    ]);
     cmd.current_dir(kernel::find_dir());
     utils::run(cmd);
 }
@@ -73,7 +79,7 @@ mod utils {
     }
 }
 
-fn objdump(gcc_aarch_path: &Option<PathBuf>)  {
+fn objdump(gcc_aarch_path: &Option<PathBuf>) {
     let mut path = if let Some(path) = gcc_aarch_path.clone() {
         path
     } else if let Ok(path) = std::env::var("GCC_AARCH_PATH") {
@@ -84,15 +90,17 @@ fn objdump(gcc_aarch_path: &Option<PathBuf>)  {
     path.push("aarch64-none-elf-objdump");
     let kernel_path = kernel::build(false);
     let mut cmd = Command::new(path);
-    cmd
-        .args(&[
-            "--disassemble",
-            "--demangle",
-            "--section", ".text",
-            "--section", ".rodata",
-            "--section", ".got",
-            &kernel_path
-        ]);
+    cmd.args(&[
+        "--disassemble",
+        "--demangle",
+        "--section",
+        ".text",
+        "--section",
+        ".rodata",
+        "--section",
+        ".got",
+        &kernel_path,
+    ]);
     cmd.current_dir(kernel::find_dir());
     utils::run(cmd);
 }

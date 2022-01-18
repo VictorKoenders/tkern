@@ -18,10 +18,12 @@ pub fn objcopy(src: &str, target: &str) {
     crate::utils::run(cmd);
 }
 
-pub fn build(release: bool,) -> String {
+pub fn build(release: bool) -> String {
     let mut cmd = Command::new("cargo");
     cmd.args(&["build", "--target", "aarch64-unknown-none-softfloat"]);
-	if release { cmd.arg("--release");}
+    if release {
+        cmd.arg("--release");
+    }
     cmd.current_dir(find_dir());
     cmd.env(
         "RUSTFLAGS",

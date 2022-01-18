@@ -4,7 +4,7 @@ pub use core::fmt::Write;
 
 #[doc(hidden)]
 pub fn _print(args: core::fmt::Arguments) {
-	uart::get().write_fmt(args).unwrap();
+    uart::get().write_fmt(args).unwrap();
 }
 
 #[macro_export]
