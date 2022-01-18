@@ -23,16 +23,16 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: fmt
-        args: --manifest-path runner/Cargo.toml -- --check
+        args: --all -- --check
 
-    - name: Check formatting
+    - name: Run clippy
       uses: actions-rs/cargo@v1
       with:
-        command: fmt
-        args: --manifest-path kernel/Cargo.toml -- --check
-
+        command: clippy
+        args: --workspace -- -D warnings
+    
     - name: Build
       uses: actions-rs/cargo@v1
       with:
         command: run
-        args: --manifest-path runner/Cargo.toml -- build
+        args: -- build
