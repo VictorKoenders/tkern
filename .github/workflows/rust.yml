@@ -17,10 +17,7 @@ jobs:
         profile: minimal
         toolchain: nightly
         override: true
-        components: rust-src
-    
-    - name: Install packages
-      run: sudo apt install gcc-arm-none-eabi -y
+        components: rust-src,llvm-tools-preview
  
     - name: Install cargo-binutils
       uses: actions-rs/install@v0.1
