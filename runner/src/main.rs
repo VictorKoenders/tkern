@@ -30,12 +30,12 @@ pub fn main() {
     match Args::from_args() {
         Args::Build { release } => {
             let out = kernel::build(release);
-            kernel::objcopy(&out, "target/kernel.img");
+            kernel::objcopy(&out, "../target/kernel.img");
         }
         Args::RunQemu { release } => {
             let out = kernel::build(release);
-            kernel::objcopy(&out, "target/kernel.img");
-            run_qemu("target/kernel.img");
+            kernel::objcopy(&out, "../target/kernel.img");
+            run_qemu("../target/kernel.img");
         }
         Args::Clean => {
             let mut cmd = Command::new("cargo");
@@ -69,6 +69,7 @@ mod utils {
     use std::process::Command;
 
     pub fn run(mut cmd: Command) {
+        print!("In {:?}: ", cmd.get_current_dir());
         println!("{:?}", cmd);
 
         let result = cmd.spawn().unwrap().wait().unwrap();
