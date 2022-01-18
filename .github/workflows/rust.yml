@@ -15,6 +15,9 @@ jobs:
         toolchain: nightly
         override: true
         components: rustfmt, clippy
+    
+    - name: Install packages
+      run: sudo apt install gcc-arm-none-eabi -y
  
     - name: Install cargo-binutils
       uses: actions-rs/install@v0.1
