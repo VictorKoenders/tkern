@@ -31,22 +31,26 @@ mod sys {
     }
 
     #[no_mangle]
-    pub unsafe fn memcpy(dest: *mut c_void, src: *const c_void, size: usize) -> *mut c_void {
-        for i in 0..size {
-            core::ptr::write(
-                dest.offset(i as isize),
-                core::ptr::read(src.offset(i as isize)),
-            );
+    pub unsafe fn memcpy(dest: *mut c_void, src: *const c_void, size: isize) -> *mut c_void {
+        {
+            let dest: *mut u8 = dest.cast();
+            let src: *const u8 = src.cast();
+            for i in 0..size {
+                core::ptr::write(dest.offset(i), core::ptr::read(src.offset(i)));
+            }
         }
         dest
     }
 
     #[no_mangle]
-    pub unsafe fn memset(ptr: *mut c_void, value: i32, num: usize) -> *mut c_void {
-        let ptr: *mut u8 = ptr.cast();
-        for i in 0..num {
-            core::ptr::write(ptr.offset(i as isize), value as u8);
+    pub unsafe fn memset(ptr: *mut c_void, value: i32, num: isize) -> *mut c_void {
+        {
+            let ptr: *mut u8 = ptr.cast();
+            let value = value as u8;
+            for i in 0..num {
+                core::ptr::write(ptr.offset(i), value);
+            }
         }
-        ptr.cast()
+        ptr
     }
 }
