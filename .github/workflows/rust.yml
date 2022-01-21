@@ -46,15 +46,27 @@ jobs:
         override: true
         components: rustfmt, clippy
 
-    - name: Check formatting
+    - name: Check formatting (Runner)
       uses: actions-rs/cargo@v1
       with:
         command: fmt
         args: --all -- --check
 
-    - name: Run clippy
+    - name: Run clippy (Runner)
       uses: actions-rs/cargo@v1
       with:
         command: clippy
         args: --workspace -- -D warnings
+ 
+    - name: Check formatting (Kernel)
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --manifest-path=kernel/Cargo.toml -- --check
+
+    - name: Run clippy (Kernel)
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --manifest-path=kernel/Cargo.toml -- -D warnings
     

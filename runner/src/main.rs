@@ -24,6 +24,7 @@ pub enum Args {
         gcc_aarch_path: Option<PathBuf>,
     },
     Clean,
+    Check,
 }
 
 pub fn main() {
@@ -45,6 +46,9 @@ pub fn main() {
         }
         Args::Objdump { gcc_aarch_path } => {
             objdump(&gcc_aarch_path);
+        }
+        Args::Check => {
+            kernel::check();
         }
     }
 }
@@ -69,11 +73,19 @@ mod utils {
     use std::process::Command;
 
     pub fn run(mut cmd: Command) {
-        print!("In {:?}: ", cmd.get_current_dir());
-        println!("{:?}", cmd);
+        let dir = match cmd.get_current_dir() {
+            Some(dir) => std::env::current_dir().unwrap().join(dir),
+            None => std::env::current_dir().unwrap(),
+        };
+        println!("cd {:?}", dir);
+        print!("{}", cmd.get_program().to_str().unwrap());
+        for arg in cmd.get_args() {
+            print!(" {}", arg.to_str().unwrap());
+        }
+        println!();
 
         let result = cmd.spawn().unwrap().wait().unwrap();
-        println!("{}", result);
+        println!("# {}", result);
         if !result.success() {
             std::process::exit(result.code().unwrap());
         }

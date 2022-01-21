@@ -1,7 +1,10 @@
 [workspace]
 members = [
-	"kernel",
 	"runner"
+]
+exclude = [
+	"kernel",
+	"test"
 ]
 
 default-members = ["runner"]
