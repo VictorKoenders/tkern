@@ -68,5 +68,5 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: clippy
-        args: --manifest-path=kernel/Cargo.toml -- -D warnings
+        args: --manifest-path=kernel/Cargo.toml --target aarch64-unknown-none-softfloat -- -D warnings
     

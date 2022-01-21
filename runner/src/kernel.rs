@@ -36,7 +36,7 @@ pub fn build(release: bool) -> String {
     );
     crate::utils::run(cmd);
 
-    String::from("../target/aarch64-kernel/debug/kernel")
+    String::from("target/aarch64-kernel/debug/kernel")
 }
 
 pub fn check() {
