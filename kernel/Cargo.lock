@@ -18,11 +18,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "driver"
+version = "0.1.0"
+
+[[package]]
 name = "kernel"
 version = "0.1.0"
 dependencies = [
  "cfg-if",
+ "driver",
+ "sys-aarch64",
+]
+
+[[package]]
+name = "sys-aarch64"
+version = "0.1.0"
+dependencies = [
  "cortex-a",
+ "driver",
  "tock-registers",
 ]
 

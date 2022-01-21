@@ -4,12 +4,11 @@
 
 use core::time::Duration;
 
-#[cfg(target_arch = "aarch64")]
-#[path = "arch/aarch64/boot.rs"]
-mod arch_boot;
 mod bsp;
-mod driver;
 mod macros;
+
+// This macro needs to be the first entry in this file. Do not add any code above this.
+bsp::main!(kernel_main);
 
 pub fn kernel_main() -> ! {
     info!(
@@ -21,6 +20,13 @@ pub fn kernel_main() -> ! {
         warn!("Debug mode, will run slow");
     }
     info!("Booting on: {}", bsp::board_name());
+    info!("Running on {}", bsp::current_privilege_level());
+
+    warn!("Loading the first 10 bytes of 0x80000, this may crash");
+    info!("Expecting {:?}", [64, 66, 56, 213, 31, 32, 0, 241, 65, 2]);
+    info!("Found     {:?}", unsafe {
+        core::slice::from_raw_parts(0x80000 as *const u8, 10)
+    });
 
     loop {
         info!("Spinning for 1 sec");
@@ -47,9 +53,7 @@ mod sys {
         } else {
             crate::println!("\nKernel panic!");
         }
-        loop {
-            cortex_a::asm::wfi();
-        }
+        crate::bsp::infinite_loop();
     }
 
     #[no_mangle]

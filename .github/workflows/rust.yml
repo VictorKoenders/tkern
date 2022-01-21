@@ -62,7 +62,7 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: fmt
-        args: --manifest-path=kernel/Cargo.toml -- --check
+        args: --manifest-path=kernel/Cargo.toml --all -- --check
  
     - name: Add aarch64-unknown-none-softfloat
       run: rustup target add aarch64-unknown-none-softfloat
@@ -71,5 +71,5 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: clippy
-        args: --manifest-path=kernel/Cargo.toml --target aarch64-unknown-none-softfloat -- -D warnings
+        args: --manifest-path=kernel/Cargo.toml --workspace --target aarch64-unknown-none-softfloat -- -D warnings
     

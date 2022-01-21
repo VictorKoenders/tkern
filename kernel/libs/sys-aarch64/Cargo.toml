@@ -1,0 +1,10 @@
+[package]
+name = "sys-aarch64"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cortex-a = { version = "7.0" }
+# dependent on cortex-a
+tock-registers = { version = "0.7.x", default-features = false }
+driver = { path = "../driver" }

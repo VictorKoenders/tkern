@@ -1,18 +1,18 @@
 use super::TimeManager;
-use crate::driver::time;
 use cortex_a::{
     asm::barrier,
     registers::{CNTFRQ_EL0, CNTPCT_EL0, CNTP_CTL_EL0, CNTP_TVAL_EL0},
 };
+use driver::time;
 use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 const NS_PER_S: u64 = 1_000_000_000;
 
 impl TimeManager {
-    pub(super) fn init(&self) {
+    pub(crate) fn init(&self) {
         self.freq.set(CNTFRQ_EL0.get() as u64);
     }
-    pub(super) fn is_inited(&self) -> bool {
+    pub(crate) fn is_inited(&self) -> bool {
         self.freq.get() != 0
     }
 

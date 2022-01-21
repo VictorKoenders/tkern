@@ -1,3 +1,8 @@
+[workspace]
+members = [
+	"libs/sys-aarch64/"
+]
+
 [package]
 name = "kernel"
 version = "0.1.0"
@@ -7,6 +12,7 @@ edition = "2021"
 
 [dependencies]
 cfg-if = "1.0.0"
-cortex-a = { version = "7.0" }
-# dependent on cortex-a
-tock-registers = { version = "0.7.x", default-features = false }
+driver = { path = "libs/driver" }
+
+[target."cfg(target_arch = \"aarch64\")".dependencies]
+sys-aarch64 = { path = "libs/sys-aarch64" }

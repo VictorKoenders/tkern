@@ -1,6 +1,7 @@
 use super::Uart;
-use crate::driver::uart;
+use super::UART_ADDR;
 use core::fmt;
+use driver::uart;
 
 impl fmt::Write for Uart {
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -13,7 +14,7 @@ impl fmt::Write for Uart {
 
 impl uart::Write for Uart {
     fn byte(&self, byte: u8) {
-        unsafe { core::ptr::write_volatile(super::UART_ADDR, byte) }
+        unsafe { core::ptr::write_volatile(UART_ADDR, byte) }
     }
     fn write_fmt(&self, args: fmt::Arguments) -> fmt::Result {
         fmt::write(&mut Uart {}, args)
