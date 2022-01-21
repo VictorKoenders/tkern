@@ -23,6 +23,7 @@ version = "0.1.0"
 dependencies = [
  "cfg-if",
  "cortex-a",
+ "tock-registers",
 ]
 
 [[package]]

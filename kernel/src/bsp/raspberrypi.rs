@@ -1,3 +1,5 @@
+use core::cell::Cell;
+
 #[path = "raspberrypi/cpu.rs"]
 pub mod cpu;
 
@@ -7,38 +9,28 @@ pub fn uart() -> &'static dyn crate::driver::uart::All {
     &UART
 }
 
-static UART: Uart = Uart {};
-
-struct Uart {}
-mod uart_impl {
-    use super::Uart;
-    use crate::driver::uart;
-    use core::fmt;
-
-    impl fmt::Write for Uart {
-        fn write_str(&mut self, s: &str) -> fmt::Result {
-            for c in s.bytes() {
-                uart::Write::byte(self, c);
-            }
-            Ok(())
-        }
+pub fn time() -> &'static dyn crate::driver::time::Time {
+    if !TIME_MANAGER.is_inited() {
+        TIME_MANAGER.init();
     }
-
-    impl uart::Write for Uart {
-        fn byte(&self, byte: u8) {
-            unsafe { core::ptr::write_volatile(super::UART_ADDR, byte) }
-        }
-        fn write_fmt(&self, args: fmt::Arguments) -> fmt::Result {
-            fmt::write(&mut Uart {}, args)
-        }
-        fn flush(&self) {}
-    }
-
-    impl uart::Read for Uart {
-        fn char(&self) -> char {
-            0 as char
-        }
-
-        fn clear(&self) {}
-    }
+    &TIME_MANAGER
 }
+
+/// Board identification.
+pub fn board_name() -> &'static str {
+    "Raspberry Pi 4"
+}
+
+static UART: Uart = Uart {};
+struct Uart {}
+
+mod uart_impl;
+
+struct TimeManager {
+    freq: Cell<u64>,
+}
+
+static TIME_MANAGER: TimeManager = TimeManager { freq: Cell::new(0) };
+unsafe impl Sync for TimeManager {}
+
+mod impl_time;

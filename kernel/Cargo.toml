@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 cfg-if = "1.0.0"
 cortex-a = { version = "7.0" }
+# dependent on cortex-a
+tock-registers = { version = "0.7.x", default-features = false }
