@@ -57,12 +57,15 @@ jobs:
       with:
         command: clippy
         args: --workspace -- -D warnings
- 
+
     - name: Check formatting (Kernel)
       uses: actions-rs/cargo@v1
       with:
         command: fmt
         args: --manifest-path=kernel/Cargo.toml -- --check
+ 
+    - name: Add aarch64-unknown-none-softfloat
+      run: rustup target add aarch64-unknown-none-softfloat
 
     - name: Run clippy (Kernel)
       uses: actions-rs/cargo@v1
