@@ -16,6 +16,7 @@
 #![deny(while_true)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+#![allow(clippy::len_without_is_empty, clippy::no_effect)]
 #![no_std]
 use core::marker::PhantomData;
 use core::ops::Deref;

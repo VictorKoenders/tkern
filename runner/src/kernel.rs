@@ -32,7 +32,7 @@ pub fn build(release: bool) -> String {
     cmd.current_dir(find_dir());
     cmd.env(
         "RUSTFLAGS",
-        "-C link-arg=-Tlibs/sys-aarch64/link.ld -C target-cpu=cortex-a72",
+        "-C link-arg=-Tsys/aarch64/link.ld -C target-cpu=cortex-a72",
     );
     crate::utils::run(cmd);
 
@@ -50,7 +50,7 @@ pub fn check() {
     cmd.current_dir(find_dir());
     cmd.env(
         "RUSTFLAGS",
-        "-C link-arg=-Tkernel/src/bsp/raspberrypi/link.ld -C target-cpu=cortex-a72",
+        "-C link-arg=-Tsys/aarch64/link.ld -C target-cpu=cortex-a72",
     );
     crate::utils::run(cmd);
 }
