@@ -15,7 +15,7 @@ use tock_registers::interfaces::Readable;
 #[macro_export]
 macro_rules! main {
     ($e:ident) => {
-        core::arch::global_asm!(include_str!("../libs/sys-aarch64/src/boot.s"));
+        core::arch::global_asm!(include_str!("../sys/aarch64/src/boot.s"));
 
         /// The Rust entry of the `kernel` binary.
         ///
