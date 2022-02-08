@@ -17720,6 +17720,23 @@
               <bitWidth>1</bitWidth>
             </field>
             <field>
+              <name>BUS_VOLTAGE</name>
+              <description>Busvoltage</description>
+              <bitOffset>9</bitOffset>
+              <bitWidth>3</bitWidth>
+              <enumeratedValues>
+                <enumeratedValue><name>V1_8</name><value>0b101</value></enumeratedValue>
+                <enumeratedValue><name>V3_0</name><value>0b110</value></enumeratedValue>
+                <enumeratedValue><name>V3_3</name><value>0b111</value></enumeratedValue>
+              </enumeratedValues>
+            </field>
+            <field>
+              <name>BUS_POWER</name>
+              <description>Buspower</description>
+              <bitOffset>8</bitOffset>
+              <bitWidth>1</bitWidth>
+            </field>
+            <field>
               <name>HCTL_8BIT</name>
               <description>Use 8 data lines</description>
               <bitOffset>5</bitOffset>
@@ -17735,6 +17752,12 @@
               <name>HCTL_DWIDTH</name>
               <description>Use 4 data lines</description>
               <bitOffset>1</bitOffset>
+              <bitWidth>1</bitWidth>
+            </field>
+            <field>
+              <name>LED</name>
+              <description>LED</description>
+              <bitOffset>0</bitOffset>
               <bitWidth>1</bitWidth>
             </field>
           </fields>

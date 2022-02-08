@@ -84063,6 +84063,132 @@ pub mod emmc {
                 self.w
             }
         }
+        #[doc = "Busvoltage\n\nValue on reset: 0"]
+        #[derive(Clone, Copy, Debug, PartialEq)]
+        #[repr(u8)]
+        pub enum BUS_VOLTAGE_A {
+            #[doc = "5: `101`"]
+            V1_8 = 5,
+            #[doc = "6: `110`"]
+            V3_0 = 6,
+            #[doc = "7: `111`"]
+            V3_3 = 7,
+        }
+        impl From<BUS_VOLTAGE_A> for u8 {
+            #[inline(always)]
+            fn from(variant: BUS_VOLTAGE_A) -> Self {
+                variant as _
+            }
+        }
+        #[doc = "Field `BUS_VOLTAGE` reader - Busvoltage"]
+        pub struct BUS_VOLTAGE_R(crate::FieldReader<u8, BUS_VOLTAGE_A>);
+        impl BUS_VOLTAGE_R {
+            #[inline(always)]
+            pub(crate) fn new(bits: u8) -> Self {
+                BUS_VOLTAGE_R(crate::FieldReader::new(bits))
+            }
+            #[doc = r"Get enumerated values variant"]
+            #[inline(always)]
+            pub fn variant(&self) -> Option<BUS_VOLTAGE_A> {
+                match self.bits {
+                    5 => Some(BUS_VOLTAGE_A::V1_8),
+                    6 => Some(BUS_VOLTAGE_A::V3_0),
+                    7 => Some(BUS_VOLTAGE_A::V3_3),
+                    _ => None,
+                }
+            }
+            #[doc = "Checks if the value of the field is `V1_8`"]
+            #[inline(always)]
+            pub fn is_v1_8(&self) -> bool {
+                **self == BUS_VOLTAGE_A::V1_8
+            }
+            #[doc = "Checks if the value of the field is `V3_0`"]
+            #[inline(always)]
+            pub fn is_v3_0(&self) -> bool {
+                **self == BUS_VOLTAGE_A::V3_0
+            }
+            #[doc = "Checks if the value of the field is `V3_3`"]
+            #[inline(always)]
+            pub fn is_v3_3(&self) -> bool {
+                **self == BUS_VOLTAGE_A::V3_3
+            }
+        }
+        impl core::ops::Deref for BUS_VOLTAGE_R {
+            type Target = crate::FieldReader<u8, BUS_VOLTAGE_A>;
+            #[inline(always)]
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+        #[doc = "Field `BUS_VOLTAGE` writer - Busvoltage"]
+        pub struct BUS_VOLTAGE_W<'a> {
+            w: &'a mut W,
+        }
+        impl<'a> BUS_VOLTAGE_W<'a> {
+            #[doc = r"Writes `variant` to the field"]
+            #[inline(always)]
+            pub fn variant(self, variant: BUS_VOLTAGE_A) -> &'a mut W {
+                unsafe { self.bits(variant.into()) }
+            }
+            #[doc = "`101`"]
+            #[inline(always)]
+            pub fn v1_8(self) -> &'a mut W {
+                self.variant(BUS_VOLTAGE_A::V1_8)
+            }
+            #[doc = "`110`"]
+            #[inline(always)]
+            pub fn v3_0(self) -> &'a mut W {
+                self.variant(BUS_VOLTAGE_A::V3_0)
+            }
+            #[doc = "`111`"]
+            #[inline(always)]
+            pub fn v3_3(self) -> &'a mut W {
+                self.variant(BUS_VOLTAGE_A::V3_3)
+            }
+            #[doc = r"Writes raw bits to the field"]
+            #[inline(always)]
+            pub unsafe fn bits(self, value: u8) -> &'a mut W {
+                self.w.bits = (self.w.bits & !(0x07 << 9)) | ((value as u32 & 0x07) << 9);
+                self.w
+            }
+        }
+        #[doc = "Field `BUS_POWER` reader - Buspower"]
+        pub struct BUS_POWER_R(crate::FieldReader<bool, bool>);
+        impl BUS_POWER_R {
+            #[inline(always)]
+            pub(crate) fn new(bits: bool) -> Self {
+                BUS_POWER_R(crate::FieldReader::new(bits))
+            }
+        }
+        impl core::ops::Deref for BUS_POWER_R {
+            type Target = crate::FieldReader<bool, bool>;
+            #[inline(always)]
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+        #[doc = "Field `BUS_POWER` writer - Buspower"]
+        pub struct BUS_POWER_W<'a> {
+            w: &'a mut W,
+        }
+        impl<'a> BUS_POWER_W<'a> {
+            #[doc = r"Sets the field bit"]
+            #[inline(always)]
+            pub fn set_bit(self) -> &'a mut W {
+                self.bit(true)
+            }
+            #[doc = r"Clears the field bit"]
+            #[inline(always)]
+            pub fn clear_bit(self) -> &'a mut W {
+                self.bit(false)
+            }
+            #[doc = r"Writes raw bits to the field"]
+            #[inline(always)]
+            pub fn bit(self, value: bool) -> &'a mut W {
+                self.w.bits = (self.w.bits & !(0x01 << 8)) | ((value as u32 & 0x01) << 8);
+                self.w
+            }
+        }
         #[doc = "Field `HCTL_8BIT` reader - Use 8 data lines"]
         pub struct HCTL_8BIT_R(crate::FieldReader<bool, bool>);
         impl HCTL_8BIT_R {
@@ -84174,6 +84300,43 @@ pub mod emmc {
                 self.w
             }
         }
+        #[doc = "Field `LED` reader - LED"]
+        pub struct LED_R(crate::FieldReader<bool, bool>);
+        impl LED_R {
+            #[inline(always)]
+            pub(crate) fn new(bits: bool) -> Self {
+                LED_R(crate::FieldReader::new(bits))
+            }
+        }
+        impl core::ops::Deref for LED_R {
+            type Target = crate::FieldReader<bool, bool>;
+            #[inline(always)]
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+        #[doc = "Field `LED` writer - LED"]
+        pub struct LED_W<'a> {
+            w: &'a mut W,
+        }
+        impl<'a> LED_W<'a> {
+            #[doc = r"Sets the field bit"]
+            #[inline(always)]
+            pub fn set_bit(self) -> &'a mut W {
+                self.bit(true)
+            }
+            #[doc = r"Clears the field bit"]
+            #[inline(always)]
+            pub fn clear_bit(self) -> &'a mut W {
+                self.bit(false)
+            }
+            #[doc = r"Writes raw bits to the field"]
+            #[inline(always)]
+            pub fn bit(self, value: bool) -> &'a mut W {
+                self.w.bits = (self.w.bits & !0x01) | (value as u32 & 0x01);
+                self.w
+            }
+        }
         impl R {
             #[doc = "Bit 22 - Enable alternate boot mode"]
             #[inline(always)]
@@ -84210,6 +84373,16 @@ pub mod emmc {
             pub fn gap_stop(&self) -> GAP_STOP_R {
                 GAP_STOP_R::new(((self.bits >> 16) & 0x01) != 0)
             }
+            #[doc = "Bits 9:11 - Busvoltage"]
+            #[inline(always)]
+            pub fn bus_voltage(&self) -> BUS_VOLTAGE_R {
+                BUS_VOLTAGE_R::new(((self.bits >> 9) & 0x07) as u8)
+            }
+            #[doc = "Bit 8 - Buspower"]
+            #[inline(always)]
+            pub fn bus_power(&self) -> BUS_POWER_R {
+                BUS_POWER_R::new(((self.bits >> 8) & 0x01) != 0)
+            }
             #[doc = "Bit 5 - Use 8 data lines"]
             #[inline(always)]
             pub fn hctl_8bit(&self) -> HCTL_8BIT_R {
@@ -84224,6 +84397,11 @@ pub mod emmc {
             #[inline(always)]
             pub fn hctl_dwidth(&self) -> HCTL_DWIDTH_R {
                 HCTL_DWIDTH_R::new(((self.bits >> 1) & 0x01) != 0)
+            }
+            #[doc = "Bit 0 - LED"]
+            #[inline(always)]
+            pub fn led(&self) -> LED_R {
+                LED_R::new((self.bits & 0x01) != 0)
             }
         }
         impl W {
@@ -84262,6 +84440,16 @@ pub mod emmc {
             pub fn gap_stop(&mut self) -> GAP_STOP_W {
                 GAP_STOP_W { w: self }
             }
+            #[doc = "Bits 9:11 - Busvoltage"]
+            #[inline(always)]
+            pub fn bus_voltage(&mut self) -> BUS_VOLTAGE_W {
+                BUS_VOLTAGE_W { w: self }
+            }
+            #[doc = "Bit 8 - Buspower"]
+            #[inline(always)]
+            pub fn bus_power(&mut self) -> BUS_POWER_W {
+                BUS_POWER_W { w: self }
+            }
             #[doc = "Bit 5 - Use 8 data lines"]
             #[inline(always)]
             pub fn hctl_8bit(&mut self) -> HCTL_8BIT_W {
@@ -84276,6 +84464,11 @@ pub mod emmc {
             #[inline(always)]
             pub fn hctl_dwidth(&mut self) -> HCTL_DWIDTH_W {
                 HCTL_DWIDTH_W { w: self }
+            }
+            #[doc = "Bit 0 - LED"]
+            #[inline(always)]
+            pub fn led(&mut self) -> LED_W {
+                LED_W { w: self }
             }
             #[doc = "Writes raw bits to the register."]
             #[inline(always)]
