@@ -18,13 +18,24 @@ jobs:
         toolchain: nightly
         override: true
         components: rust-src,llvm-tools-preview
+    
+    - name: Cache cargo crates
+      id: cache-cargo
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/rust-objcopy
+          ~/.cargo/bin/cargo-make
+        key: ${{ runner.os }}-cargo-bin
  
     - name: Install cargo-binutils
+      if: steps.cache-cargo.outputs.cache-hit != 'true'
       uses: actions-rs/install@v0.1
       with:
         crate: cargo-binutils
 
     - name: Install cargo-make
+      if: steps.cache-cargo.outputs.cache-hit != 'true'
       uses: actions-rs/install@v0.1
       with:
         crate: cargo-make
