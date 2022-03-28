@@ -1,10 +1,26 @@
 [workspace]
 members = [
-	"runner"
+	"driver/driver",
+	"sys/aarch64",
+	"sys/bcm2837",
+	"sys/bcm2837/pac",
 ]
 exclude = [
-	"kernel",
 	"test"
 ]
 
-default-members = ["runner"]
+[package]
+name = "kernel"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cfg-if = "1.0.0"
+driver = { path = "driver/driver" }
+
+[target."cfg(target_arch = \"aarch64\")".dependencies]
+sys-aarch64 = { path = "sys/aarch64" }
+bcm2837_hal = { path = "sys/bcm2837" }
+

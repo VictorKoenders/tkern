@@ -3,7 +3,6 @@ mod command;
 pub use self::command::Command;
 
 use crate::pac;
-use bitflags::bitflags;
 use core::{num::NonZeroU32, time::Duration};
 use embedded_time::rate::{Hertz, Kilohertz, Megahertz};
 
@@ -53,6 +52,7 @@ impl CardStatus {
     }
 }
 
+#[allow(dead_code)]
 struct EmmcState {
     card_capacity: u64, // Card capacity expanded .. calculated from card details
     emmc_card_type: SdCardType, // Card type

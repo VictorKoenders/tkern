@@ -1,0 +1,37 @@
+[config]
+skip_core_tasks = true
+default_to_workspace = false
+
+[tasks.check]
+toolchain = "nightly"
+script = "cargo check --target aarch64-kernel.json -Zbuild-std=alloc,core"
+env = { RUSTFLAGS = "-C link-arg=-Tsys/aarch64/link.ld -C target-cpu=cortex-a72" }
+
+[tasks.build-debug]
+dependencies = [
+    "cargo-objcopy-debug",
+    "cargo-build-debug",
+]
+
+[tasks.fmt]
+alias = "format"
+
+[tasks.format]
+script = "cargo fmt --all"
+
+[tasks.qemu]
+dependencies = [
+    "cargo-objcopy-debug"
+]
+script = "qemu-system-aarch64 -M raspi3 -serial stdio -display none -kernel target/kernel.img"
+
+[tasks.cargo-build-debug]
+toolchain = "nightly"
+command = "cargo"
+args = ["build", "--target", "aarch64-kernel.json", "-Zbuild-std=alloc,core"]
+env = { RUSTFLAGS = "-C link-arg=-Tsys/aarch64/link.ld -C target-cpu=cortex-a72" }
+
+[tasks.cargo-objcopy-debug]
+toolchain = "nightly"
+script = "rust-objcopy --strip-all -O binary target/aarch64-kernel/debug/kernel target/kernel.img"
+dependencies = ["cargo-build-debug"]

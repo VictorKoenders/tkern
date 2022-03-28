@@ -7,6 +7,8 @@ pub mod boot;
 mod cpu;
 mod driver;
 
+use core::{arch::asm, hint::unreachable_unchecked};
+
 use cortex_a::registers::CurrentEL;
 use tock_registers::interfaces::Readable;
 
@@ -68,4 +70,16 @@ pub fn time() -> &'static dyn ::driver::time::Time {
         driver::TIME_MANAGER.init();
     }
     &driver::TIME_MANAGER
+}
+
+/// Jumps to a given function
+///
+/// # Safety
+///
+/// This function will perform a jump to an unknown address.
+/// It is assumed that the given address is a valid function pointer, and that the function will never return.
+pub unsafe fn jump(fun: fn() -> !) -> ! {
+    let addr = fun as *const () as usize;
+    asm!("BR {}", in(reg) addr);
+    unreachable_unchecked();
 }

@@ -2,7 +2,7 @@
 #![cfg_attr(target_os = "tkern", no_main)]
 #![no_std]
 
-use core::time::Duration;
+use core::{arch::asm, time::Duration};
 
 mod bsp;
 mod macros;
@@ -22,18 +22,20 @@ pub fn kernel_main() -> ! {
     info!("Booting on: {}", bsp::board_name());
     info!("Running on {}", bsp::current_privilege_level());
 
+    info!("Adress of `kernel_main` is {:p}", kernel_main as *const ());
     warn!("Loading the first 10 bytes of 0x80000, this may crash");
     info!("Expecting {:?}", [64, 66, 56, 213, 31, 32, 0, 241, 65, 2]);
     info!("Found     {:?}", unsafe {
         core::slice::from_raw_parts(0x80000 as *const u8, 10)
     });
 
-    loop {
-        info!("Spinning for 1 sec");
+    for i in 0..5 {
+        info!("{} / 5", i);
         bsp::time()
             .spin_for(Duration::from_secs(1))
             .expect("Could not spin");
     }
+    unsafe { bsp::jump(kernel_main) };
 }
 
 #[cfg(not(target_os = "tkern"))]
