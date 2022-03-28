@@ -1,9 +1,11 @@
 [workspace]
 members = [
-	"driver/driver",
+	"driver/interface",
+
+	"driver/bcm2837",
+	"driver/bcm2837/pac",
+
 	"sys/aarch64",
-	"sys/bcm2837",
-	"sys/bcm2837/pac",
 ]
 exclude = [
 	"test"
@@ -19,9 +21,8 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 cfg-if = "1.0.0"
-driver = { path = "driver/driver" }
+driver = { path = "driver/interface" }
 
 [target."cfg(target_arch = \"aarch64\")".dependencies]
 sys-aarch64 = { path = "sys/aarch64" }
-bcm2837_hal = { path = "sys/bcm2837" }
 

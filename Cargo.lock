@@ -190,7 +190,6 @@ checksum = "1aab8fc367588b89dcee83ab0fd66b72b50b72fa1904d7095045ace2b0c81c35"
 name = "kernel"
 version = "0.1.0"
 dependencies = [
- "bcm2837_hal",
  "cfg-if",
  "driver",
  "sys-aarch64",
