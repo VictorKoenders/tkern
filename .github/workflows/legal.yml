@@ -1,0 +1,19 @@
+on: [push, pull_request]
+
+name: Rust
+
+jobs:
+  build:
+    name: Audit
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+
+    - uses: actions-rs/audit-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: EmbarkStudios/cargo-deny-action@v1
+ 
