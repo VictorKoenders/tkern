@@ -19,13 +19,7 @@ jobs:
         override: true
         components: rust-src,llvm-tools-preview
  
-    - name: Install cargo-make
-      uses: actions-rs/install@v0.1
-      with:
-        crate: cargo-make
+    - uses: davidB/rust-cargo-make@v1
 
     - name: Build
-      uses: actions-rs/cargo@v1
-      with:
-        command: make
-        args: build-debug
+      run: cargo make build-debug
