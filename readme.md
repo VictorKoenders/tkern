@@ -39,6 +39,6 @@ To interact with the project, [cargo-make](https://sagiegurari.github.io/cargo-m
 
 The kernel is located in `src`.
 
-Drivers for interacting with the system are located in the `driver` folder.
+Drivers for interacting with the system are located in the `driver` folder. These drivers must all follow the definition in the `driver/interface` crate.
 
-Implementations of those drivers can be found in the `sys` folder.
+Architecture and machine specific implementations are defined in the `folder` crate. Currently only `aarch64` is supported, and assumes that it is running on a raspberry pi 4.

@@ -19,6 +19,9 @@ alias = "format"
 [tasks.format]
 script = "cargo fmt --all"
 
+[tasks.clippy]
+script = "cargo +nightly clippy --target aarch64-unknown-none-softfloat --all"
+
 [tasks.build-debug]
 dependencies = [
     "cargo-objcopy-debug",

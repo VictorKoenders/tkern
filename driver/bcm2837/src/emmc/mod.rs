@@ -327,8 +327,7 @@ where
         let base_clock: Hertz = BASE_CLOCK.try_into().unwrap();
         let base_clock = base_clock.0;
 
-        let mut div;
-        div = base_clock / (freq << 1);
+        let mut div = base_clock / (freq << 1);
         if (base_clock / (div << 1)) > freq {
             div += 1
         }
