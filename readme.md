@@ -4,22 +4,27 @@ Install the required tools:
 
 - Rustup [https://rustup.rs]
   - `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
-  - This project uses `nightly` but will automatically install it if you'd like to install `stable` instead.
-- Cargo make [https://sagiegurari.github.io/cargo-make/]
-  - `cargo install cargo-make`
+    - Make sure to select `nightly`
+    - You can also switch to nightly with `rustup default nightly`
+- Rust components: 
+  - rust-src: `rustup component add rust-src`
+  - llvm-tools-preview: `rustup component add llvm-tools-preview`
+- Cargo crates:
+  - cargo-binutils: `cargo install cargo-binutils`
+  - cargo-make: `cargo install cargo-make`
 - Qemu aarch64 [https://www.qemu.org/]
   - Ubuntu: `sudo apt install qemu-system-arm`
-
-For browsing in an IDE, e.g. vscode, install the `aarch64-unknown-none-softfloat` target:
-
-```bash
-rustup target add aarch64-unknown-none-softfloat
-```
 
 Then run
 
 ```bash
 cargo make qemu
+```
+
+For browsing in an IDE, e.g. vscode, install the `aarch64-unknown-none-softfloat` target:
+
+```bash
+rustup target add aarch64-unknown-none-softfloat
 ```
 
 # Commands
