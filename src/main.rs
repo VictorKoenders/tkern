@@ -2,7 +2,7 @@
 #![cfg_attr(target_os = "tkern", no_main)]
 #![no_std]
 
-use core::{arch::asm, time::Duration};
+use core::time::Duration;
 
 mod bsp;
 mod macros;
