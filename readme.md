@@ -26,6 +26,7 @@ cargo make qemu
 
 To interact with the project, [cargo-make](https://sagiegurari.github.io/cargo-make/) is used. The following commands are configured:
 
+- `cargo make check`: Quickly checks if the project is in a compilable state.
 - `cargo make qemu`: Build the project and run it in `qemu-system-aarch64`
 - `cargo make fmt` or `cargo make format`: format the code in the project
 
