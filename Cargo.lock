@@ -416,9 +416,9 @@ dependencies = [
 
 [[package]]
 name = "svd2rust"
-version = "0.21.0"
+version = "0.22.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c9b8eff28c67b807ba166174302d3bd8c287547a0f75ceb84323af01077028b"
+checksum = "a4b5505731712d0b0d2c330f4144cb6256f86d4a41c4a4cfabec46c5bf74fc06"
 dependencies = [
  "anyhow",
  "cast",
