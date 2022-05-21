@@ -1,0 +1,14 @@
+[package]
+name = "tkern"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+cortex-a = "7.2.0"
+tock-registers = "0.7.0"
+utils = { path = "libs/utils" }
+
+[profile.dev]
+panic = "abort"
+[profile.release]
+panic = "abort"

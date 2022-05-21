@@ -1,0 +1,78 @@
+[config]
+default_to_workspace = false
+skip_core_tasks = true
+
+[env]
+ARCH = "aarch64-unknown-none-softfloat"
+OUT_DIR = "target/${ARCH}/debug"
+TKERN_TARGET_BOARD = "raspi3b" # or raspi4
+
+[env.release]
+OUT_DIR = "target/${ARCH}/release"
+ADDITIONAL_CARGO_ARGS = "--release"
+
+[tasks.default]
+alias = "build"
+
+[tasks.objdump]
+install_crate = "cargo-binutils"
+command = "cargo"
+args = ["objdump", "--target", "${ARCH}", "--", "-D"]
+
+[tasks.doc]
+script = "cargo doc --target ${ARCH} --open"
+
+[tasks.build]
+script = "rust-objcopy --strip-all -O binary ${OUT_DIR}/tkern ${OUT_DIR}/tkern.img"
+dependencies = [
+    "build_cargo",
+    "get_env"
+]
+
+[tasks.build_cargo]
+command = "cargo"
+args = ["build", "--target", "${ARCH}"]
+dependencies = [ "get_env" ]
+
+[tasks.run]
+private = false
+extend = "subcommand"
+env = { "SUBCOMMAND_PREFIX" = "run" }
+
+[tasks.subcommand]
+private = true
+script = '''
+#!@duckscript
+
+cm_run_task ${SUBCOMMAND_PREFIX}_${1}
+'''
+
+[tasks.run_qemu]
+private = true # extends from `tasks.run`
+command = "qemu-system-aarch64"
+args = ["-machine", "raspi3b", "-serial", "stdio", "-kernel", "${OUT_DIR}/tkern.img"]
+dependencies = [
+    "build"
+]
+
+[tasks.lints]
+script = "cargo fmt --all && cargo clippy --workspace --all-targets --target ${ARCH}"
+
+[tasks.get_env]
+script_runner = "@duckscript"
+script = '''
+board = get_env TKERN_TARGET_BOARD
+rustflags = get_env RUSTFLAGS
+if eq ${board} "raspi3b"
+    # rustflags = concat ${rustflags} "-C target-cpu=cortex-a53"
+    set_env TKERN_MAX_MEMORY "1gb"
+elseif eq ${board} "raspi4"
+    rustflags = concat ${rustflags} "-C target-cpu=cortex-a72"
+    set_env TKERN_MAX_MEMORY "8gb"
+else
+    echo "Unknown board: ${board}"
+    exit 1
+end
+echo "RUSTFLAGS: ${rustflags}"
+set_env RUSTFLAGS ${rustflags}
+'''
