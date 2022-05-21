@@ -102,7 +102,7 @@ impl<T: Sized> ConstNonNull<T> {
         // requirements for a reference.
         unsafe { &*self.cast().as_ptr() }
     }
-    
+
     pub fn offset(self, offset: isize) -> ConstNonNull<T> {
         ConstNonNull::new(unsafe { self.pointer.offset(offset) }).unwrap()
     }
@@ -357,6 +357,8 @@ impl<T: ?Sized> From<&T> for ConstNonNull<T> {
     #[inline]
     fn from(reference: &T) -> Self {
         // SAFETY: A mutable reference cannot be null.
-        ConstNonNull { pointer: reference as *const T }
+        ConstNonNull {
+            pointer: reference as *const T,
+        }
     }
 }

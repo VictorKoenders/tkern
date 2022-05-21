@@ -1,72 +1,46 @@
-/* SPDX-License-Identifier: MIT OR Apache-2.0
- *
- * Copyright (c) 2018-2022 Andre Richter <andre.o.richter@gmail.com>
- */
+ENTRY(0x80000)
 
-__rpi_phys_dram_start_addr = 0;
-
-/* The physical address at which the the kernel binary will be loaded by the Raspberry's firmware */
-__rpi_phys_binary_load_addr = 0x80000;
-
-
-ENTRY(__rpi_phys_binary_load_addr)
-
-/* Flags:
- *     4 == R
- *     5 == RX
- *     6 == RW
- *
- * Segments are marked PT_LOAD below so that the ELF file provides virtual and physical addresses.
- * It doesn't mean all of them need actually be loaded.
- */
 PHDRS
 {
-    segment_boot_core_stack PT_LOAD FLAGS(6);
-    segment_code            PT_LOAD FLAGS(5);
-    segment_data            PT_LOAD FLAGS(6);
+    segment_code PT_LOAD FLAGS(5); /* RX */
+    segment_data PT_LOAD FLAGS(6); /* RW */
 }
 
 SECTIONS
 {
-    . =  __rpi_phys_dram_start_addr;
+    . = 0;
 
-    /***********************************************************************************************
-    * Boot Core Stack
-    ***********************************************************************************************/
-    .boot_core_stack (NOLOAD) :
+    .boot_stack (NOLOAD) :
     {
-                                             /*   ^             */
-                                             /*   | stack       */
-        . += __rpi_phys_binary_load_addr;    /*   | growth      */
-                                             /*   | direction   */
-        __boot_core_stack_end_exclusive = .; /*   |             */
-    } :segment_boot_core_stack
+        /* Stack during the booting process */
+        /* The Raspi will locate our kernel at 0x80000 */
+        /* We'll use everything before this as our stack */
+        . += 0x80000;
+    }
 
-    /***********************************************************************************************
-    * Code + RO Data + Global Offset Table
-    ***********************************************************************************************/
     .text :
     {
-        KEEP(*(.text._start))
-        *(.text._start_arguments) /* Constants (or statics in Rust speak) read by _start(). */
-        *(.text._start_rust)      /* The Rust entry point */
-        *(.text*)                 /* Everything else */
+        __kernel_start = .;
+        KEEP(*(.text._start))  /* src/boot.s */
+        *(.text._start_rust) /* src/main.rs */
+        *(.text*)            /* Everything else */
+        . = ALIGN(8);
+        __kernel_end = .;
     } :segment_code
 
     .rodata : ALIGN(8) { *(.rodata*) } :segment_code
     .got    : ALIGN(8) { *(.got)     } :segment_code
 
-    /***********************************************************************************************
-    * Data + BSS
-    ***********************************************************************************************/
     .data : { *(.data*) } :segment_data
 
     /* Section is zeroed in pairs of u64. Align start and end to 16 bytes */
     .bss (NOLOAD) : ALIGN(16)
     {
         __bss_start = .;
-        *(.bss*);
+        *(.bss)
+        *(.bss*)
+        *(COMMON)
         . = ALIGN(16);
-        __bss_end_exclusive = .;
+        __bss_size = . - __bss_start;
     } :segment_data
 }

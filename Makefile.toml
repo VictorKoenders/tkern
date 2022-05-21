@@ -18,6 +18,9 @@ alias = "build"
 install_crate = "cargo-binutils"
 command = "cargo"
 args = ["objdump", "--target", "${ARCH}", "--", "-D"]
+dependencies = [
+    "get_env"
+]
 
 [tasks.doc]
 script = "cargo doc --target ${ARCH} --open"
@@ -51,12 +54,17 @@ cm_run_task ${SUBCOMMAND_PREFIX}_${1}
 private = true # extends from `tasks.run`
 command = "qemu-system-aarch64"
 args = ["-machine", "raspi3b", "-serial", "stdio", "-kernel", "${OUT_DIR}/tkern.img"]
-dependencies = [
-    "build"
-]
+dependencies = ["build"]
+
+[tasks.run_qemu_gdb]
+private = true # extends from `tasks.run`
+command = "qemu-system-aarch64"
+args = ["-machine", "raspi3b", "-serial", "stdio", "-kernel", "${OUT_DIR}/tkern.img", "-s", "-S"]
+dependencies = ["build"]
 
 [tasks.lints]
-script = "cargo fmt --all && cargo clippy --workspace --all-targets --target ${ARCH}"
+script = "cargo fmt --all && cargo clippy --workspace --all-targets"
+dependencies = ["get_env"]
 
 [tasks.get_env]
 script_runner = "@duckscript"
@@ -73,6 +81,5 @@ else
     echo "Unknown board: ${board}"
     exit 1
 end
-echo "RUSTFLAGS: ${rustflags}"
 set_env RUSTFLAGS ${rustflags}
 '''
