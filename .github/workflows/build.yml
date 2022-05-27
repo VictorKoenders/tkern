@@ -11,12 +11,8 @@ jobs:
     - name: Checkout sources
       uses: actions/checkout@v2
 
-    - name: Install rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        override: true
-        components: rust-src,llvm-tools-preview
+    - name: Setup rust toolchain
+      run: rustup show
     
     - name: Cache cargo crates
       id: cache-cargo
