@@ -18,9 +18,6 @@ use core::fmt::Write as _;
 use cortex_a::registers::MPIDR_EL1;
 use tock_registers::interfaces::Readable;
 
-#[cfg(not(test))]
-use core::panic::PanicInfo;
-
 // Assembly counterpart to this file.
 global_asm!(include_str!("boot.s"));
 
@@ -125,26 +122,31 @@ impl core::fmt::Write for QemuOutput {
     }
 }
 
-#[cfg(not(test))]
-#[lang = "eh_personality"]
-pub extern "C" fn eh_personality() {}
+#[cfg(not(any(test, target_os = "linux")))]
+mod rust_internals {
+    use crate::QemuOutput;
+    use core::fmt::Write;
+    use core::panic::PanicInfo;
 
-#[cfg(not(test))]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    let (location, line, column) = match info.location() {
-        Some(loc) => (loc.file(), loc.line(), loc.column()),
-        _ => ("???", 0, 0),
-    };
+    #[lang = "eh_personality"]
+    pub extern "C" fn eh_personality() {}
 
-    let _ = writeln!(
-        &mut QemuOutput,
-        "\nPanic: {}\
-         \n       {}:{}:{}\n",
-        info.message().unwrap_or(&format_args!("explicit panic")),
-        location,
-        line,
-        column
-    );
-    loop {}
+    #[panic_handler]
+    fn panic(info: &PanicInfo) -> ! {
+        let (location, line, column) = match info.location() {
+            Some(loc) => (loc.file(), loc.line(), loc.column()),
+            _ => ("???", 0, 0),
+        };
+
+        let _ = writeln!(
+            &mut QemuOutput,
+            "\nPanic: {}\
+            \n       {}:{}:{}\n",
+            info.message().unwrap_or(&format_args!("explicit panic")),
+            location,
+            line,
+            column
+        );
+        loop {}
+    }
 }

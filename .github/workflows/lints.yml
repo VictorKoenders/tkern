@@ -11,15 +11,17 @@ jobs:
     - name: Checkout sources
       uses: actions/checkout@v2
 
-    - name: Install rust
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        override: true
-        components: rustfmt
+    - name: Setup rust toolchain
+      run: rustup show
  
     - name: Check formatting
       uses: actions-rs/cargo@v1
       with:
         command: fmt
         args: --all -- --check
+ 
+    - name: Check code style
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --workspace --all-targets -- -D warnings
