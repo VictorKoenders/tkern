@@ -19,9 +19,16 @@ jobs:
       uses: actions/cache@v3
       with:
         path: |
-          ~/.cargo/bin/*
+          ~/.cargo/bin/cargo-objcopy
+          ~/.cargo/bin/cargo-make
         key: ${{ runner.os }}-cargo-bin
- 
+
+    - name: Install cargo-objcopy
+      if: steps.cache-cargo.outputs.cache-hit != 'true'
+      uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-objcopy 
+
     - name: Install cargo-make
       if: steps.cache-cargo.outputs.cache-hit != 'true'
       uses: actions-rs/install@v0.1
