@@ -124,9 +124,9 @@ impl core::fmt::Write for QemuOutput {
 
 #[cfg(not(any(test, target_os = "linux")))]
 mod rust_internals {
-    use core::panic::PanicInfo;
     use crate::QemuOutput;
     use core::fmt::Write;
+    use core::panic::PanicInfo;
 
     #[lang = "eh_personality"]
     pub extern "C" fn eh_personality() {}
