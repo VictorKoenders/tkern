@@ -1,0 +1,39 @@
+on: [push, pull_request]
+
+name: Build
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        override: true
+        components: rust-src,llvm-tools-preview
+    
+    - name: Cache cargo crates
+      id: cache-cargo
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/*
+        key: ${{ runner.os }}-cargo-bin
+ 
+    - name: Install cargo-make
+      if: steps.cache-cargo.outputs.cache-hit != 'true'
+      uses: actions-rs/install@v0.1
+      with:
+        crate: cargo-make
+
+    - name: Build
+      uses: actions-rs/cargo@v1
+      with:
+        command: make
+        args: build

@@ -1,7 +1,8 @@
 [package]
-name = "derive_utils"
+name = "tkern_derive_utils"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
 
 [lib]
 proc-macro = true

@@ -193,7 +193,8 @@ impl FrameBufferInitInner {
             height: self.height,
             pitch: self.width * self.depth / 8,
             bytes_per_pixel: self.depth / 8,
-            pointer: NonNull::new((self.pointer - 0x4000_0000) as *mut _).expect("Could not allocate framebuffer"),
+            pointer: NonNull::new((self.pointer - 0x4000_0000) as *mut _)
+                .expect("Could not allocate framebuffer"),
         }
     }
 }
@@ -260,7 +261,9 @@ impl FrameBuffer {
 
         let mut x = x;
         for c in text.chars() {
-            let bytes = font8x8::BASIC_FONTS.get(c).unwrap_or_else(|| font8x8::BASIC_FONTS.get('?').unwrap());
+            let bytes = font8x8::BASIC_FONTS
+                .get(c)
+                .unwrap_or_else(|| font8x8::BASIC_FONTS.get('?').unwrap());
             for (dy, bits) in bytes.into_iter().enumerate() {
                 for dx in 0..8 {
                     if bits & (1 << dx) > 0 {

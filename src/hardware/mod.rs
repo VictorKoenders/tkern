@@ -1,6 +1,6 @@
 use core::ptr::NonNull;
 use cortex_a::registers::MIDR_EL1;
-use derive_utils::RegEnum;
+use tkern_derive_utils::RegEnum;
 use tock_registers::interfaces::Readable;
 
 pub fn detect() -> Hardware {

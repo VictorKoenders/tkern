@@ -76,10 +76,8 @@ board = get_env TKERN_TARGET_BOARD
 rustflags = get_env RUSTFLAGS
 if eq ${board} "raspi3b"
     # rustflags = concat ${rustflags} "-C target-cpu=cortex-a53"
-    set_env TKERN_MAX_MEMORY "1gb"
 elseif eq ${board} "raspi4"
     rustflags = concat ${rustflags} "-C target-cpu=cortex-a72"
-    set_env TKERN_MAX_MEMORY "8gb"
 else
     echo "Unknown board: ${board}"
     exit 1

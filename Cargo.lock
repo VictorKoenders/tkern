@@ -68,15 +68,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "derive_utils"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "drivers"
 version = "0.0.0"
 
@@ -222,9 +213,18 @@ dependencies = [
  "bytemuck",
  "cortex-a",
  "custom_debug_derive",
- "derive_utils",
+ "tkern_derive_utils",
  "tock-registers",
  "utils",
+]
+
+[[package]]
+name = "tkern_derive_utils"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

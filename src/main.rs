@@ -5,15 +5,6 @@
 
 mod hardware;
 
-pub mod config {
-    #![allow(clippy::unreadable_literal)]
-
-    //! Config variables.
-    //!
-    //! These will be generated based on your `BOARD` config. See `build.rs` for more info.
-    include!(concat!(env!("OUT_DIR"), "/config.rs"));
-}
-
 // This will include the core documentation into our docs
 #[doc(inline)]
 pub use core;
@@ -37,9 +28,9 @@ global_asm!(include_str!("boot.s"));
 #[no_mangle]
 pub extern "C" fn _start_rust(
     atag_addr: u64, // x0: 32 bit pointer to atag in memory (primary core only) / 0 (secondary cores)
-    _x1: u64,      // always 0 for now
-    _x2: u64,      // always 0 for now
-    _x3: u64,      // always 0 for now
+    _x1: u64,       // always 0 for now
+    _x2: u64,       // always 0 for now
+    _x3: u64,       // always 0 for now
     _start_address: u64, // x4: The start address on which the kernel started. This will be the `_start` label in our `boot.s`
 ) -> ! {
     let core = (MPIDR_EL1.get() & 0xFF) as u8;
@@ -81,7 +72,16 @@ pub extern "C" fn _start_rust(
     //     let bytes = &bytemuck::cast_slice::<_, u8>(result.as_slice());
     //     let _ = writeln!(&mut output, "{}: {:?}", command, &bytes);
     // }
-    let framebuffer = videocore.framebuffer_init(800, 600).unwrap();
+    let framebuffer = match videocore.framebuffer_init(800, 600) {
+        Ok(fb) => fb,
+        Err(e) => {
+            let _ = writeln!(&mut output, "Could not initialize frame buffer: {:?}", e);
+            let _ = writeln!(&mut output, "Aborting kernel");
+            loop {
+                cortex_a::asm::wfi();
+            }
+        }
+    };
     let _ = writeln!(&mut output, "Frame buffer: {:#?}", framebuffer);
 
     for x in 10..20 {
