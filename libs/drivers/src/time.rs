@@ -32,6 +32,5 @@ impl Instant {
     }
 }
 
-
 #[derive(Debug)]
 pub struct SpinError(());

@@ -7,8 +7,11 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 cortex-a = "7.2.0"
 tock-registers = "0.7.0"
+derive_utils = { path = "libs/derive_utils" }
 utils = { path = "libs/utils" }
 bcm2837_hal = { path = "libs/bcm2837" }
+custom_debug_derive = "0.5.0"
+bytemuck = { version = "1.9.1", features = ["aarch64_simd"] }
 
 [profile.dev]
 panic = "abort"

@@ -25,6 +25,9 @@ dependencies = [
 [tasks.doc]
 script = "cargo doc --target ${ARCH} --open"
 
+[tasks.docs]
+alias = "doc"
+
 [tasks.build]
 script = "rust-objcopy --strip-all -O binary ${OUT_DIR}/tkern ${OUT_DIR}/tkern.img"
 dependencies = [

@@ -2,7 +2,6 @@
 #![warn(unsafe_op_in_unsafe_fn)]
 
 pub mod const_non_null;
-
 use core::fmt;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
