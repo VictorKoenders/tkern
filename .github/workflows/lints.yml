@@ -19,3 +19,9 @@ jobs:
       with:
         command: fmt
         args: --all -- --check
+ 
+    - name: Check code style
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --workspace --all-targets -- -D warnings
