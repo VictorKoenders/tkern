@@ -1,8 +1,15 @@
 [package]
 name = "atags"
-version = "0.0.0"
+version = "0.0.1"
+authors = [ "Trangar <crates@trangar.com>" ]
 edition = "2021"
 license = "MIT OR Apache-2.0"
+description = "Parsing of linux ATAG data structures"
+documentation = "https://docs.rs/atags"
+repository = "https://github.com/VictorKoenders/tkern"
 
 [dependencies]
-custom_debug_derive = "*"
+custom_debug_derive = "0.5.0"
+
+[features]
+nightly = []
