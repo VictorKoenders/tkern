@@ -33,11 +33,11 @@ macro_rules! impl_pins {
                 impl<T> [<P $idx>] <T> {
                     $(
                         pub fn $fn (self) -> [<P $idx>] < [<$fn:camel>] > {
-                            crate::peripherals::GPIO::$fsel_parent(|sel|{
-                                sel.modify(|_r, w| {
-                                    w. [<fsel $idx>] ().$fn()
-                                });
-                            });
+                            // crate::peripherals::GPIO::$fsel_parent(|sel|{
+                            //     sel.modify(|_r, w| {
+                            //         w. [<fsel $idx>] ().$fn()
+                            //     });
+                            // });
                             [<P $idx>](
                                 [<$fn:camel>] (())
                             )

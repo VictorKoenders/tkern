@@ -1,4 +1,0 @@
-target = "none"
-nightly = true
-const_generic = true
-strict = true

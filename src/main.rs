@@ -13,6 +13,7 @@ pub use core;
 use bcm2837_hal::videocore::Color;
 use core::arch::global_asm;
 use core::fmt::Write as _;
+use core::num::NonZeroUsize;
 use core::ptr::NonNull;
 use cortex_a::registers::MPIDR_EL1;
 use tock_registers::interfaces::Readable;
@@ -54,8 +55,16 @@ pub extern "C" fn _start_rust(
     let hardware = hardware::detect();
     let _ = writeln!(&mut output, "{:#?}", hardware);
 
-    let peripherals = unsafe { bcm2837_hal::pac::Peripherals::steal() };
-    let mut videocore = bcm2837_hal::videocore::VideoCore::new(peripherals.VCMAILBOX);
+    // let peripherals = unsafe { bcm2837_hal::pac::Peripherals::steal() };
+    let mut videocore = unsafe {
+        bcm2837_hal::videocore::VideoCore::new(
+            hardware
+                .mmio_base_address
+                .map_addr(|a| NonZeroUsize::new_unchecked(a.get() + 0xb880))
+                .cast()
+                .as_ref(),
+        )
+    };
 
     let framebuffer = match videocore.framebuffer_init(800, 600) {
         Ok(fb) => fb,

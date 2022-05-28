@@ -1,9 +1,8 @@
+use bcm2837_pac::vcmailbox;
 use core::{cell::UnsafeCell, ptr::NonNull};
 
-use bcm2837_pac::VCMAILBOX;
-
 pub struct VideoCore {
-    mb: VCMAILBOX,
+    mb: &'static vcmailbox::RegisterBlock,
 }
 
 mod tags {
@@ -11,7 +10,10 @@ mod tags {
 }
 
 impl VideoCore {
-    pub fn new(mb: VCMAILBOX) -> Self {
+    /// # Safety
+    ///
+    /// Only one instance of this `VideoCore` should be created.
+    pub unsafe fn new(mb: &'static vcmailbox::RegisterBlock) -> Self {
         Self { mb }
     }
 
