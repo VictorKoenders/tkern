@@ -3,6 +3,13 @@
 version = 3
 
 [[package]]
+name = "atags"
+version = "0.0.0"
+dependencies = [
+ "custom_debug_derive",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -24,7 +31,7 @@ dependencies = [
 
 [[package]]
 name = "bcm2837_pac"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "vcell",
 ]
@@ -209,6 +216,7 @@ dependencies = [
 name = "tkern"
 version = "0.0.0"
 dependencies = [
+ "atags",
  "bcm2837_hal",
  "bytemuck",
  "cortex-a",
@@ -220,7 +228,7 @@ dependencies = [
 
 [[package]]
 name = "tkern_derive_utils"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "proc-macro2",
  "quote",

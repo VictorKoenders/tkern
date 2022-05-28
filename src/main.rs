@@ -4,17 +4,16 @@
 #![warn(unsafe_op_in_unsafe_fn, clippy::pedantic)]
 
 mod hardware;
+mod sys;
 
 // This will include the core documentation into our docs
 #[doc(inline)]
 pub use core;
 
-mod atag;
-mod sys;
-
 use bcm2837_hal::videocore::Color;
 use core::arch::global_asm;
 use core::fmt::Write as _;
+use core::ptr::NonNull;
 use cortex_a::registers::MPIDR_EL1;
 use tock_registers::interfaces::Readable;
 
@@ -36,6 +35,14 @@ pub extern "C" fn _start_rust(
     let _ = writeln!(&mut output, "Core {}", core);
     let _ = writeln!(&mut output, "atag_addr 0x{:08X}", atag_addr);
 
+    if let Some(ptr) = NonNull::new(atag_addr as *mut ()) {
+        let atag = unsafe { atags::Atags::new(ptr) };
+        let _ = writeln!(&mut output, "Atag:");
+        for tag in atag.iter() {
+            let _ = writeln!(&mut output, "  {:?}", tag);
+        }
+    }
+
     let _ = writeln!(
         &mut output,
         "Kernel is between 0x{:08X} and 0x{:08X} (size {})",
@@ -44,31 +51,12 @@ pub extern "C" fn _start_rust(
         utils::HumanReadableSize::new(sys::kernel_end() - sys::kernel_start())
     );
 
-    if core == 0 {
-        atag::debug(&mut output);
-    }
-
     let hardware = hardware::detect();
     let _ = writeln!(&mut output, "{:#?}", hardware);
 
     let peripherals = unsafe { bcm2837_hal::pac::Peripherals::steal() };
     let mut videocore = bcm2837_hal::videocore::VideoCore::new(peripherals.VCMAILBOX);
-    // for (command, input) in [
-    //     ("Board model", [0x00010001]),
-    //     ("Board revision", [0x00010002]),
-    //     ("MAC address", [0x00010003]),
-    //     ("board serial", [0x00010004]),
-    //     ("arm memory", [0x00010005]),
-    //     ("vc memory", [0x00010006]),
-    //     ("clocks", [0x00010007]),
-    //     ("Config", [0x00050001]),
-    //     ("DMA channels", [0x00060001]),
-    // ] {
-    //     let result = videocore.send(bcm2837_hal::videocore::Command::Properties, &input).unwrap();
-    //     // let len = result[0] as usize;
-    //     let bytes = &bytemuck::cast_slice::<_, u8>(result.as_slice());
-    //     let _ = writeln!(&mut output, "{}: {:?}", command, &bytes);
-    // }
+
     let framebuffer = match videocore.framebuffer_init(800, 600) {
         Ok(fb) => fb,
         Err(e) => {

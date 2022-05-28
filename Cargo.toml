@@ -12,6 +12,7 @@ utils = { path = "libs/utils" }
 bcm2837_hal = { path = "libs/bcm2837" }
 custom_debug_derive = "0.5.0"
 bytemuck = { version = "1.9.1", features = ["aarch64_simd"] }
+atags = { path = "libs/atags" }
 
 [profile.dev]
 panic = "abort"
