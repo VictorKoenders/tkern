@@ -13,8 +13,8 @@ mod sys;
 pub use core;
 
 use core::arch::global_asm;
-use core::fmt::Write as _;
 use core::ptr::NonNull;
+use hardware::Hardware;
 use videocore_mailbox::VideoCore;
 
 // Assembly counterpart to this file.
@@ -32,16 +32,14 @@ pub extern "C" fn _start_rust(
     let hardware = hardware::detect();
     if hardware.is_primary_core() {
         let mut output = output::QemuOutput;
-        print_init(&mut output, atag_addr);
-
-        let _ = writeln!(&mut output, "{:#?}", hardware);
+        print_init(&mut output, &hardware, atag_addr);
 
         let mut videocore = unsafe { VideoCore::new(hardware.mmio_base_address) };
 
         let framebuffer = videocore.allocate_framebuffer(1600, 1200, 24);
         let mut output = output::FrameBufferOutput::new(framebuffer);
 
-        print_init(&mut output, atag_addr);
+        print_init(&mut output, &hardware, atag_addr);
 
         unsafe {
             hardware.spawn_other_cores(NonNull::new_unchecked(start_address as usize as *mut _));
@@ -53,7 +51,7 @@ pub extern "C" fn _start_rust(
     }
 }
 
-fn print_init(output: &mut impl core::fmt::Write, atag_addr: u64) {
+fn print_init(output: &mut impl core::fmt::Write, hardware: &Hardware, atag_addr: u64) {
     let _ = writeln!(output, "Hello Rust Kernel world!");
     let _ = writeln!(output, "atag_addr 0x{:08X}", atag_addr);
     if let Some(ptr) = NonNull::new(atag_addr as *mut ()) {
@@ -70,6 +68,7 @@ fn print_init(output: &mut impl core::fmt::Write, atag_addr: u64) {
         sys::kernel_end(),
         utils::HumanReadableSize::new(sys::kernel_end() - sys::kernel_start())
     );
+    let _ = writeln!(output, "{:#?}", hardware);
 }
 
 #[cfg(not(any(test, target_os = "linux")))]
