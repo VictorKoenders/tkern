@@ -9,10 +9,10 @@ cortex-a = "7.3.1"
 tock-registers = "0.7.0"
 tkern_derive_utils = { path = "libs/tkern_derive_utils" }
 utils = { path = "libs/utils" }
-bcm2837_hal = { path = "libs/bcm2837" }
 custom_debug_derive = "0.5.0"
 bytemuck = { version = "1.9.1", features = ["aarch64_simd"] }
 atags = { path = "libs/atags" }
+videocore_mailbox = { path = "libs/videocore_mailbox" }
 
 [profile.dev]
 panic = "abort"

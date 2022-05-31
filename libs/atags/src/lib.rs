@@ -1,5 +1,4 @@
 #![doc = include_str!("../README.md")]
-
 #![no_std]
 #![cfg_attr(feature = "nightly", feature(strict_provenance))]
 #![warn(clippy::pedantic, missing_docs)]

@@ -2,21 +2,20 @@
 #![no_main]
 #![feature(lang_items, asm_const, panic_info_message, strict_provenance)]
 #![warn(unsafe_op_in_unsafe_fn, clippy::pedantic)]
+#![allow(clippy::cast_possible_truncation)]
 
 mod hardware;
+mod output;
 mod sys;
 
 // This will include the core documentation into our docs
 #[doc(inline)]
 pub use core;
 
-use bcm2837_hal::videocore::Color;
 use core::arch::global_asm;
 use core::fmt::Write as _;
-use core::num::NonZeroUsize;
 use core::ptr::NonNull;
-use cortex_a::registers::MPIDR_EL1;
-use tock_registers::interfaces::Readable;
+use videocore_mailbox::VideoCore;
 
 // Assembly counterpart to this file.
 global_asm!(include_str!("boot.s"));
@@ -28,100 +27,54 @@ pub extern "C" fn _start_rust(
     _x1: u64,       // always 0 for now
     _x2: u64,       // always 0 for now
     _x3: u64,       // always 0 for now
-    _start_address: u64, // x4: The start address on which the kernel started. This will be the `_start` label in our `boot.s`
+    start_address: u64, // x4: The start address on which the kernel started. This will be the `_start` label in our `boot.s`
 ) -> ! {
-    let core = (MPIDR_EL1.get() & 0xFF) as u8;
-    let mut output = QemuOutput;
-    let _ = writeln!(&mut output, "Hello Rust Kernel world!");
-    let _ = writeln!(&mut output, "Core {}", core);
-    let _ = writeln!(&mut output, "atag_addr 0x{:08X}", atag_addr);
-
-    if let Some(ptr) = NonNull::new(atag_addr as *mut ()) {
-        let atag = unsafe { atags::Atags::new(ptr) };
-        let _ = writeln!(&mut output, "Atag:");
-        for tag in atag.iter() {
-            let _ = writeln!(&mut output, "  {:?}", tag);
-        }
-    }
-
-    let _ = writeln!(
-        &mut output,
-        "Kernel is between 0x{:08X} and 0x{:08X} (size {})",
-        sys::kernel_start(),
-        sys::kernel_end(),
-        utils::HumanReadableSize::new(sys::kernel_end() - sys::kernel_start())
-    );
-
     let hardware = hardware::detect();
-    let _ = writeln!(&mut output, "{:#?}", hardware);
+    if hardware.is_primary_core() {
+        let mut output = output::QemuOutput;
+        print_init(&mut output, atag_addr);
 
-    // let peripherals = unsafe { bcm2837_hal::pac::Peripherals::steal() };
-    let mut videocore = unsafe {
-        bcm2837_hal::videocore::VideoCore::new(
-            hardware
-                .mmio_base_address
-                .map_addr(|a| NonZeroUsize::new_unchecked(a.get() + 0xb880))
-                .cast()
-                .as_ref(),
-        )
-    };
+        let _ = writeln!(&mut output, "{:#?}", hardware);
 
-    let framebuffer = match videocore.framebuffer_init(800, 600) {
-        Ok(fb) => fb,
-        Err(e) => {
-            let _ = writeln!(&mut output, "Could not initialize frame buffer: {:?}", e);
-            let _ = writeln!(&mut output, "Aborting kernel");
-            loop {
-                cortex_a::asm::wfi();
-            }
-        }
-    };
-    let _ = writeln!(&mut output, "Frame buffer: {:#?}", framebuffer);
+        let mut videocore = unsafe { VideoCore::new(hardware.mmio_base_address) };
 
-    for x in 10..20 {
-        for y in 10..20 {
-            framebuffer.put_pixel(x, y, Color::WHITE);
+        let framebuffer = videocore.allocate_framebuffer(1600, 1200, 24);
+        let mut output = output::FrameBufferOutput::new(framebuffer);
+
+        print_init(&mut output, atag_addr);
+
+        unsafe {
+            hardware.spawn_other_cores(NonNull::new_unchecked(start_address as usize as *mut _));
         }
     }
-
-    framebuffer.text(10, 50, "Hello world!");
-    framebuffer.text(10, 60, "This is Trangar's rusty kernel");
-
-    // let addr = match core {
-    //     0 => Some(0xE0),
-    //     1 => Some(0xE8),
-    //     2 => Some(0xF0),
-    //     _ => None
-    // };
-    // if let Some(addr) = addr {
-    //     let _ = writeln!(&mut output, "Spawning up the next core!");
-    //     let _ = writeln!(&mut output, "--------------------------");
-    //     unsafe {
-    //         core::ptr::write_volatile(addr as *mut usize, start_address as usize);
-    //     }
-    // }
 
     loop {
         cortex_a::asm::wfe();
     }
 }
 
-struct QemuOutput;
-
-impl core::fmt::Write for QemuOutput {
-    fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        for c in s.chars() {
-            unsafe {
-                core::ptr::write_volatile(0x3F20_1000 as *mut u8, c as u8);
-            }
+fn print_init(output: &mut impl core::fmt::Write, atag_addr: u64) {
+    let _ = writeln!(output, "Hello Rust Kernel world!");
+    let _ = writeln!(output, "atag_addr 0x{:08X}", atag_addr);
+    if let Some(ptr) = NonNull::new(atag_addr as *mut ()) {
+        let atag = unsafe { atags::Atags::new(ptr) };
+        let _ = writeln!(output, "Atag:");
+        for tag in atag.iter() {
+            let _ = writeln!(output, "  {:?}", tag);
         }
-        Ok(())
     }
+    let _ = writeln!(
+        output,
+        "Kernel is between 0x{:08X} and 0x{:08X} (size {})",
+        sys::kernel_start(),
+        sys::kernel_end(),
+        utils::HumanReadableSize::new(sys::kernel_end() - sys::kernel_start())
+    );
 }
 
 #[cfg(not(any(test, target_os = "linux")))]
 mod rust_internals {
-    use crate::QemuOutput;
+    use crate::output::QemuOutput;
     use core::fmt::Write;
     use core::panic::PanicInfo;
 

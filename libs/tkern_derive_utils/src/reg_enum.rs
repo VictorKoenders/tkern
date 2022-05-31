@@ -9,6 +9,7 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream, (String, Span)> {
     };
 
     let mut quote_fields = Vec::new();
+    let mut to_u64_fields = Vec::new();
     let mut unknown_ty: Option<Type> = None;
     for field in fields.variants {
         if field.ident.to_string() == "Unknown" {
@@ -74,6 +75,9 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream, (String, Span)> {
         quote_fields.push(quote! {
             #idx => Self::#ident,
         });
+        to_u64_fields.push(quote! {
+            Self::#ident => #idx,
+        });
     }
     let unknown_ty = match unknown_ty {
         Some(ty) => ty,
@@ -87,12 +91,20 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream, (String, Span)> {
     quote_fields.push(quote! {
         x => Self::Unknown(x as #unknown_ty)
     });
+    to_u64_fields.push(quote! {
+        Self::Unknown(v) => v as u64
+    });
     let name = input.ident;
     Ok(quote! {
         impl #name {
             pub fn new(val: u64) -> Self {
                 match val {
                     #( #quote_fields )*
+                }
+            }
+            pub fn to_u64(self) -> u64 {
+                match self {
+                    #( #to_u64_fields )*
                 }
             }
         }

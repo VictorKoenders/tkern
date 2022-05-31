@@ -1,9 +1,18 @@
 use core::ptr::NonNull;
-use cortex_a::registers::MIDR_EL1;
+use cortex_a::registers::{MIDR_EL1, MPIDR_EL1};
 use tkern_derive_utils::RegEnum;
 use tock_registers::interfaces::Readable;
 
+static mut HARDWARE: Option<Hardware> = None;
+
+/// Detect the hardware we're running on
 pub fn detect() -> Hardware {
+    // Safety: because an instance of `hardware` is needed to spawn up the other cores, this function will only be called once on the main core
+    // This means that `HARDWARE` is always set for the other cores
+    if let Some(hardware) = unsafe { HARDWARE.clone() } {
+        return hardware;
+    }
+
     let midr = MIDR_EL1.get();
     let implementer = Implementer::new(MIDR_EL1::Implementer.read(midr));
     #[allow(clippy::cast_possible_truncation)]
@@ -25,7 +34,7 @@ pub fn detect() -> Hardware {
         _ => ("Unknown", 0x2000_0000),
     };
 
-    Hardware {
+    let hardware = Hardware {
         name,
         implementer,
         variant,
@@ -33,10 +42,16 @@ pub fn detect() -> Hardware {
         partnum,
         revision,
         mmio_base_address: NonNull::new(mmio_base_address as _).expect("Unknown MMIO base address"),
+    };
+
+    // Safety: We only get here if we're the main core and when no other cores are running
+    unsafe {
+        HARDWARE = Some(hardware.clone());
     }
+    hardware
 }
 
-#[derive(RegEnum, Debug)]
+#[derive(RegEnum, Debug, Clone)]
 pub enum Implementer {
     /// 0x00: Reserved for software use
     Reserved,
@@ -84,7 +99,7 @@ pub enum Implementer {
     Unknown(u8),
 }
 
-#[derive(RegEnum, Debug)]
+#[derive(RegEnum, Debug, Clone)]
 pub enum Architecture {
     /// 0b0001: Armv4
     Armv4,
@@ -112,7 +127,8 @@ pub enum Architecture {
 
     Unknown(u8),
 }
-#[derive(custom_debug_derive::Debug)]
+
+#[derive(Clone, custom_debug_derive::Debug)]
 pub struct Hardware {
     pub name: &'static str,
     pub implementer: Implementer,
@@ -124,4 +140,34 @@ pub struct Hardware {
     #[debug(format = "0x{:02X}")]
     pub revision: u8,
     pub mmio_base_address: NonNull<()>,
+}
+
+impl Hardware {
+    /// Spawn the other cores at the given start address. This function will only start the cores from the first core. If this function is called from the other cores, the function will return safely.
+    ///
+    /// # Safety:
+    ///
+    /// The caller must ensure that the `start_address` is a valid point on which the other cores can start.
+    ///
+    /// The caller must ensure that this function gets called exactly once on the main core.
+    pub unsafe fn spawn_other_cores(&self, start_address: NonNull<()>) {
+        if !self.is_primary_core() {
+            return;
+        }
+
+        for addr in [0xE0, 0xE8, 0xF0] {
+            unsafe {
+                core::ptr::write_volatile(addr as *mut usize, start_address.as_ptr() as usize);
+            }
+            for _ in 0..1_000 {
+                cortex_a::asm::nop();
+            }
+        }
+    }
+
+    #[allow(clippy::unused_self)]
+    pub(crate) fn is_primary_core(&self) -> bool {
+        let core = (MPIDR_EL1.get() & 0xFF) as u8;
+        core == 0
+    }
 }
