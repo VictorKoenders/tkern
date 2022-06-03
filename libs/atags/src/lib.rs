@@ -161,7 +161,7 @@ pub struct AtagCore {
 
 /// Describes an area of physical memory the kernel is to use.
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AtagMemory {
     /// The size of the area.
     #[debug(format = "0x{:08X}")]

@@ -1,9 +1,12 @@
 #![no_std]
-#![warn(unsafe_op_in_unsafe_fn)]
+#![warn(unsafe_op_in_unsafe_fn, rust_2018_idioms, clippy::pedantic)]
 
+pub mod atomic_mutex;
 pub mod const_non_null;
+
 use core::fmt;
 
+// TODO: Replace this with `u16` so we don't have to do float calculations
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum HumanReadableSize {
     Bytes(f32),

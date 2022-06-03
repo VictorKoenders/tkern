@@ -1,6 +1,13 @@
+use utils::atomic_mutex::AtomicMutex;
 use videocore_mailbox::{Color, FrameBuffer};
 
-pub(crate) struct FrameBufferOutput {
+pub(super) static FRAMEBUFFER: AtomicMutex<Option<FrameBufferOutput>> = AtomicMutex::new(None);
+
+pub fn init(buffer: FrameBuffer) {
+    *FRAMEBUFFER.lock() = Some(FrameBufferOutput::new(buffer));
+}
+
+pub struct FrameBufferOutput {
     buffer: FrameBuffer,
     x: u32,
     y: u32,
