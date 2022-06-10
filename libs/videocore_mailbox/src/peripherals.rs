@@ -41,16 +41,18 @@ impl Read {
     //     result.set_channel(channel);
     //     result
     // }
-    // pub fn set_data(&mut self, data: u32) {
-    //     self.0 = (self.0 & 0xf) | (data & 0xffff_fff0);
-    // }
-    // pub fn set_channel(&mut self, channel: u8) {
-    //     self.0 = (self.0 & 0xffff_fff0) | ((channel & 0xf) as u32);
-    // }
-    pub fn data(&self) -> u32 {
+    #[cfg(test)]
+    pub fn set_data(&mut self, data: u32) {
+        self.0 = (self.0 & 0xf) | (data & 0xffff_fff0);
+    }
+    #[cfg(test)]
+    pub fn set_channel(&mut self, channel: u8) {
+        self.0 = (self.0 & 0xffff_fff0) | u32::from(channel & 0xf);
+    }
+    pub fn data(self) -> u32 {
         self.0 & 0xffff_fff0
     }
-    pub fn channel(&self) -> u8 {
+    pub fn channel(self) -> u8 {
         (self.0 & 0x0000_000f) as u8
     }
 }
@@ -60,9 +62,9 @@ fn test_read() {
     assert_eq!(core::mem::size_of::<Read>(), core::mem::size_of::<u32>());
     let mut read = Read(0);
     read.set_channel(0xf);
-    read.set_data(0x12345670);
+    read.set_data(0x1234_5670);
 
-    assert_eq!(read.0, 0x1234567F);
+    assert_eq!(read.0, 0x1234_567F);
 }
 
 #[repr(C)]
@@ -78,11 +80,11 @@ pub struct Sender(u32);
 pub struct Status(u32);
 
 impl Status {
-    pub fn full(&self) -> bool {
-        (self.0 & 0x80000000) > 0
+    pub fn full(self) -> bool {
+        (self.0 & 0x8000_0000) > 0
     }
-    pub fn empty(&self) -> bool {
-        (self.0 & 0x40000000) > 0
+    pub fn empty(self) -> bool {
+        (self.0 & 0x4000_0000) > 0
     }
 }
 
@@ -105,7 +107,7 @@ impl Write {
         self.0 = (self.0 & 0xf) | (data & 0xffff_fff0);
     }
     pub fn set_channel(&mut self, channel: u8) {
-        self.0 = (self.0 & 0xffff_fff0) | ((channel & 0xf) as u32);
+        self.0 = (self.0 & 0xffff_fff0) | u32::from(channel & 0xf);
     }
     // pub fn data(&self) -> u32 {
     //     self.0 & 0xffff_fff0
@@ -120,7 +122,7 @@ fn test_write() {
     assert_eq!(core::mem::size_of::<Write>(), core::mem::size_of::<u32>());
     let mut write = Write(0);
     write.set_channel(0x0f);
-    write.set_data(0x12345670);
+    write.set_data(0x1234_5670);
 
-    assert_eq!(write.0, 0x1234567F);
+    assert_eq!(write.0, 0x1234_567F);
 }

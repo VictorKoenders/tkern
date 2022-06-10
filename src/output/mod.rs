@@ -2,7 +2,7 @@ pub use videocore_mailbox::Color;
 
 use self::{framebuffer::FrameBufferOutput, qemu::QemuOutput};
 use core::fmt::Write;
-use utils::atomic_mutex::AtomicMutexGuard;
+use utils::atomic_mutex;
 
 pub mod framebuffer;
 pub mod qemu;
@@ -52,7 +52,7 @@ pub fn warn(cb: impl FnOnce(&mut Writer<'_>)) {
 }
 
 pub struct Writer<'a> {
-    fb: AtomicMutexGuard<'a, Option<FrameBufferOutput>>,
+    fb: atomic_mutex::Guard<'a, Option<FrameBufferOutput>>,
     qemu: &'a mut QemuOutput,
 }
 

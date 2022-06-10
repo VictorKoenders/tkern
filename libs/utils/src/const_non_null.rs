@@ -56,7 +56,7 @@ impl<T: Sized> ConstNonNull<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::ptr::ConstNonNull;
+    /// use utils::ConstNonNull;
     ///
     /// let ptr = ConstNonNull::<u32>::dangling();
     /// // Important: don't try to access the value of `ptr` without
@@ -103,6 +103,12 @@ impl<T: Sized> ConstNonNull<T> {
         unsafe { &*self.cast().as_ptr() }
     }
 
+    /// Get a reference to a pointer with a given offset relative to the current pointer
+    ///
+    /// # Panics
+    ///
+    /// Will panic if the given offset would result in a pointer at 0x0
+    #[must_use]
     pub fn offset(self, offset: isize) -> ConstNonNull<T> {
         ConstNonNull::new(unsafe { self.pointer.offset(offset) }).unwrap()
     }
@@ -118,7 +124,7 @@ impl<T: ?Sized> ConstNonNull<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::ptr::ConstNonNull;
+    /// use utils::ConstNonNull;
     ///
     /// let mut x = 0u32;
     /// let ptr = unsafe { ConstNonNull::new_unchecked(&mut x as *const _) };
@@ -127,10 +133,10 @@ impl<T: ?Sized> ConstNonNull<T> {
     /// *Incorrect* usage of this function:
     ///
     /// ```rust,no_run
-    /// use std::ptr::ConstNonNull;
+    /// use utils::ConstNonNull;
     ///
     /// // NEVER DO THAT!!! This is undefined behavior. ⚠️
-    /// let ptr = unsafe { ConstNonNull::<u32>::new_unchecked(std::ptr::null_mut()) };
+    /// let ptr = unsafe { ConstNonNull::<u32>::new_unchecked(core::ptr::null_mut()) };
     /// ```
     #[inline]
     pub const unsafe fn new_unchecked(ptr: *const T) -> Self {
@@ -143,22 +149,23 @@ impl<T: ?Sized> ConstNonNull<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::ptr::ConstNonNull;
+    /// use utils::ConstNonNull;
     ///
     /// let mut x = 0u32;
     /// let ptr = ConstNonNull::<u32>::new(&mut x as *const _).expect("ptr is null!");
     ///
-    /// if let Some(ptr) = ConstNonNull::<u32>::new(std::ptr::null_mut()) {
+    /// if let Some(ptr) = ConstNonNull::<u32>::new(core::ptr::null_mut()) {
     ///     unreachable!();
     /// }
     /// ```
     #[inline]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn new(ptr: *const T) -> Option<Self> {
-        if !ptr.is_null() {
+        if ptr.is_null() {
+            None
+        } else {
             // SAFETY: The pointer is already checked and is not null
             Some(unsafe { Self::new_unchecked(ptr) })
-        } else {
-            None
         }
     }
 
@@ -184,17 +191,13 @@ impl<T: ?Sized> ConstNonNull<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::ptr::ConstNonNull;
+    /// use utils::ConstNonNull;
     ///
     /// let mut x = 0u32;
     /// let ptr = ConstNonNull::new(&mut x).expect("ptr is null!");
     ///
     /// let x_value = unsafe { *ptr.as_ptr() };
     /// assert_eq!(x_value, 0);
-    ///
-    /// unsafe { *ptr.as_ptr() += 2; }
-    /// let x_value = unsafe { *ptr.as_ptr() };
-    /// assert_eq!(x_value, 2);
     /// ```
     #[must_use]
     #[inline]
@@ -229,7 +232,7 @@ impl<T: ?Sized> ConstNonNull<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::ptr::ConstNonNull;
+    /// use utils::ConstNonNull;
     ///
     /// let mut x = 0u32;
     /// let ptr = ConstNonNull::new(&mut x as *const _).expect("ptr is null!");
@@ -252,7 +255,7 @@ impl<T: ?Sized> ConstNonNull<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::ptr::ConstNonNull;
+    /// use utils::ConstNonNull;
     ///
     /// let mut x = 0u32;
     /// let ptr = ConstNonNull::new(&mut x as *const _).expect("null pointer");
@@ -265,7 +268,7 @@ impl<T: ?Sized> ConstNonNull<T> {
     #[inline]
     pub const fn cast<U>(self) -> ConstNonNull<U> {
         // SAFETY: `self` is a `ConstNonNull` pointer which is necessarily non-null
-        unsafe { ConstNonNull::new_unchecked(self.as_ptr() as *const U) }
+        unsafe { ConstNonNull::new_unchecked(self.as_ptr().cast()) }
     }
 }
 
@@ -280,7 +283,7 @@ impl<T> ConstNonNull<[T]> {
     /// # Examples
     ///
     /// ```rust
-    /// use std::ptr::ConstNonNull;
+    /// use utils::ConstNonNull;
     ///
     /// // create a slice pointer when starting out with a pointer to the first element
     /// let mut x = [5, 6, 7];
@@ -346,7 +349,7 @@ impl<T: ?Sized> PartialOrd for ConstNonNull<T> {
 impl<T: ?Sized> hash::Hash for ConstNonNull<T> {
     #[inline]
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
-        self.as_ptr().hash(state)
+        self.as_ptr().hash(state);
     }
 }
 

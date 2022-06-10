@@ -11,6 +11,7 @@ pub struct FrameBuffer {
 }
 
 #[derive(Debug, Copy, Clone)]
+#[allow(clippy::upper_case_acronyms)]
 pub(super) enum PixelOrder {
     BGR = 0x00,
     RGB = 0x01,
@@ -56,10 +57,14 @@ impl FrameBuffer {
         }
     }
 
+    /// Get the width of this framebuffer
+    #[must_use]
     pub fn width(&self) -> u32 {
         self.width
     }
 
+    /// Get the height of this framebuffer
+    #[must_use]
     pub fn height(&self) -> u32 {
         self.height
     }
@@ -72,16 +77,15 @@ impl FrameBuffer {
     }
 
     pub fn char(&mut self, x: u32, y: u32, char: char, color: Color) {
-        use font8x8::{unicode::BasicFonts, UnicodeFonts};
-
         let (color, size) = self.color_to_slice(color);
         let color = &color[..size];
-        let font = BasicFonts::new();
 
-        let glyph = font.get(char).unwrap_or(font.get('?').unwrap());
+        let glyph = Self::get_glyph(char);
         for (dy, row) in glyph.into_iter().enumerate() {
-            let mut index =
-                ((x * self.bits_per_pixel) + ((y + dy as u32) * self.pixels_per_row)) as usize;
+            // Safety: this will never be higher than u32
+            let dy = unsafe { u32::try_from(dy).unwrap_unchecked() };
+
+            let mut index = ((x * self.bits_per_pixel) + ((y + dy) * self.pixels_per_row)) as usize;
             for bit in 0..8 {
                 let color = match row & (1 << bit) {
                     0 => &[0, 0, 0, 0][..size],
@@ -93,6 +97,12 @@ impl FrameBuffer {
                 index += self.bits_per_pixel as usize;
             }
         }
+    }
+
+    fn get_glyph(char: char) -> [u8; 8] {
+        use font8x8::{unicode::BasicFonts, UnicodeFonts};
+        let font = BasicFonts::new();
+        font.get(char).unwrap_or_else(|| font.get('?').unwrap())
     }
 
     fn color_to_slice(&self, color: Color) -> ([u8; 4], usize) {

@@ -1,3 +1,8 @@
+#![cfg_attr(not(test), no_std)]
+#![feature(strict_provenance, allocator_api, nonnull_slice_from_raw_parts)]
+#![warn(unsafe_op_in_unsafe_fn, clippy::pedantic, rust_2018_idioms)]
+#![allow(clippy::cast_possible_truncation)]
+
 use core::{
     alloc::{AllocError, Layout},
     num::NonZeroUsize,
@@ -5,26 +10,50 @@ use core::{
 };
 use utils::atomic_mutex::AtomicMutex;
 
-struct Allocator {
+pub struct Allocator {
     start: NonNull<()>,
     length: NonZeroUsize,
     offset: AtomicMutex<usize>,
 }
 
-#[global_allocator]
-static mut ALLOCATOR: Allocator = Allocator {
-    start: NonNull::dangling(),
-    length: unsafe { NonZeroUsize::new_unchecked(4) },
-    offset: AtomicMutex::new(0),
-};
-
 impl Allocator {
+    /// Create a new uninited instance of this allocator
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that this allocator gets inited properly
+    #[must_use]
+    pub const unsafe fn new() -> Self {
+        Allocator {
+            start: NonNull::dangling(),
+            length: unsafe { NonZeroUsize::new_unchecked(4) },
+            offset: AtomicMutex::new(0),
+        }
+    }
+
+    /// Initialize the allocator at the given address and with the given length
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that the memory address is valid for the lifetime of this allocator
     pub unsafe fn init(&mut self, addr: NonNull<()>, length: NonZeroUsize) {
         self.start = addr.map_addr(|addr| align(addr, 16));
         self.length = length;
         self.offset = AtomicMutex::new(0);
 
         *unsafe { self.start.cast().as_mut() } = Header::default();
+    }
+
+    #[cfg(test)]
+    fn new_from_slice(slice: &mut [u8]) -> Self {
+        unsafe {
+            let mut allocator = Self::new();
+            allocator.init(
+                NonNull::new_unchecked(slice.as_mut_ptr().cast()),
+                NonZeroUsize::new(slice.len()).unwrap(),
+            );
+            allocator
+        }
     }
 
     unsafe fn find_free_header<'a>(
@@ -105,6 +134,23 @@ unsafe impl core::alloc::Allocator for Allocator {
         let header = unsafe { Header::from_ptr(ptr) };
         header.flags.remove(HeaderFlags::OCCUPIED);
     }
+
+    unsafe fn shrink(
+        &self,
+        ptr: NonNull<u8>,
+        old_layout: Layout,
+        new_layout: Layout,
+    ) -> Result<NonNull<[u8]>, AllocError> {
+        debug_assert!(
+            new_layout.size() <= old_layout.size(),
+            "`new_layout.size()` must be smaller than or equal to `old_layout.size()`"
+        );
+
+        let header = unsafe { Header::from_ptr(ptr) };
+        header.data_length = new_layout.size() as u32;
+
+        Ok(header.data())
+    }
 }
 
 unsafe impl core::alloc::GlobalAlloc for Allocator {
@@ -171,11 +217,6 @@ impl Default for Header {
     }
 }
 
-#[test]
-fn test_header_size() {
-    assert_eq!(core::mem::size_of::<Header>(), 16);
-}
-
 fn align(addr: NonZeroUsize, alignment: usize) -> NonZeroUsize {
     let rem = addr.get() % alignment;
     if rem == 0 {
@@ -188,9 +229,13 @@ fn align(addr: NonZeroUsize, alignment: usize) -> NonZeroUsize {
 impl Header {
     unsafe fn from_ptr<'a>(ptr: NonNull<u8>) -> &'a mut Self {
         unsafe {
-            ptr.map_addr(|a| NonZeroUsize::new_unchecked(a.get() - core::mem::size_of::<Header>()))
-                .cast()
-                .as_mut()
+            ptr.map_addr(|a| {
+                let addr = a.get() - core::mem::size_of::<Header>();
+                let padding = addr % core::mem::align_of::<Header>();
+                NonZeroUsize::new_unchecked(addr - padding)
+            })
+            .cast()
+            .as_mut()
         }
     }
 
@@ -262,6 +307,43 @@ bitflags::bitflags! {
     }
 }
 
-pub unsafe fn init(memory_start: NonNull<()>, size: NonZeroUsize) {
-    unsafe { ALLOCATOR.init(memory_start, size) }
+#[test]
+fn test_header_size() {
+    assert_eq!(core::mem::size_of::<Header>(), 16);
+}
+
+#[test]
+fn test_alloc_dealloc() {
+    extern crate alloc;
+    use alloc::vec::Vec;
+
+    let mut buffer = [0u8; 100];
+    let allocator = Allocator::new_from_slice(&mut buffer);
+    let mut vec = Vec::new_in(&allocator);
+    assert!(vec.is_empty());
+    vec.push(1u32);
+    assert_eq!(vec.len(), 1);
+
+    let header = unsafe { allocator.start.cast::<Header>().as_ref() };
+    assert_eq!(
+        header.data_length as usize,
+        vec.capacity() * core::mem::size_of::<u32>()
+    );
+    assert_eq!(header.prefix_len, 0);
+    assert_eq!(header.flags, HeaderFlags::OCCUPIED);
+
+    let old_ptr = vec.as_ptr();
+
+    vec.shrink_to_fit();
+
+    // shrinking should keep the same pointer
+    assert_eq!(vec.as_ptr(), old_ptr);
+
+    let header = unsafe { Header::from_ptr(NonNull::new_unchecked(vec.as_mut_ptr()).cast()) };
+    assert_eq!(
+        header.data_length as usize,
+        vec.capacity() * core::mem::size_of::<u32>()
+    );
+    assert_eq!(header.prefix_len, 0);
+    assert_eq!(header.flags, HeaderFlags::OCCUPIED);
 }

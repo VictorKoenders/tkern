@@ -12,7 +12,7 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream, (String, Span)> {
     let mut to_u64_fields = Vec::new();
     let mut unknown_ty: Option<Type> = None;
     for field in fields.variants {
-        if field.ident.to_string() == "Unknown" {
+        if field.ident == "Unknown" {
             let field = match field.fields {
                 Fields::Unnamed(fields) => match fields.unnamed.into_iter().next() {
                     Some(field) => field,
@@ -35,7 +35,7 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream, (String, Span)> {
                 Some(s) => s,
                 None => continue,
             };
-            if segment.ident.to_string() != String::from("doc") {
+            if segment.ident != *"doc" {
                 continue;
             }
 
@@ -54,12 +54,12 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream, (String, Span)> {
             }
             if let Some(first_non_hex_digit) = text.bytes().position(|b| b == b' ' || b == b':') {
                 let num_str = &text[..first_non_hex_digit];
-                if num_str.starts_with("0x") {
-                    if let Ok(num) = u64::from_str_radix(&num_str[2..], 16) {
+                if let Some(num_str) = num_str.strip_prefix("0x") {
+                    if let Ok(num) = u64::from_str_radix(num_str, 16) {
                         idx = Some(num);
                     }
-                } else if num_str.starts_with("0b") {
-                    if let Ok(num) = u64::from_str_radix(&num_str[2..], 2) {
+                } else if let Some(num_str) = num_str.strip_prefix("0b") {
+                    if let Ok(num) = u64::from_str_radix(num_str, 2) {
                         idx = Some(num);
                     }
                 } else if let Ok(num) = num_str.parse() {

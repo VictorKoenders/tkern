@@ -70,8 +70,8 @@ pub(super) enum ItemKind {
 }
 
 impl ItemKind {
-    pub fn to_bytes(self) -> [u8; 4] {
-        (self.to_u64() as u32).to_le_bytes()
+    pub fn get_bytes(self) -> [u8; 4] {
+        u32::try_from(self.to_u64()).unwrap().to_le_bytes()
     }
 }
 
@@ -79,7 +79,7 @@ pub(super) struct Item<'a>(&'a [u8]);
 impl<'a> Item<'a> {
     pub fn kind(&self) -> ItemKind {
         let identifier = *bytemuck::from_bytes::<u32>(&self.0[0..4]);
-        ItemKind::new(identifier as u64)
+        ItemKind::new(u64::from(identifier))
     }
     pub fn bytes(&self) -> &[u8] {
         &self.0[12..]
@@ -118,8 +118,8 @@ impl Request {
     }
 
     fn add_tag<const N: usize>(mut self, tag: ItemKind, buffer: [u8; N]) -> Self {
-        self.add_slice(&tag.to_bytes()); // tag
-        self.add_slice(&(N as u32).to_le_bytes()); // request/response byte size
+        self.add_slice(&tag.get_bytes()); // tag
+        self.add_slice(&(u32::try_from(N).unwrap().to_le_bytes())); // request/response byte size
         self.add_slice(&[0u8; 4]); // 0 = request
         self.add_slice(&buffer);
         self
@@ -201,14 +201,17 @@ impl Request {
     }
 
     pub fn send(mut self, peripherals: &mut Peripherals, channel: Channel) -> Response {
-        let mut length = self.index as u32;
+        let mut length = self.index;
         if length % 4 != 0 {
             length += 4 - (length % 4);
         }
-        assert!(length <= self.bytes.len() as u32);
-        self.bytes[0..4].copy_from_slice(&(length as u32).to_le_bytes());
+        assert!(length <= self.bytes.len());
+        self.bytes[0..4].copy_from_slice(&(u32::try_from(length).unwrap().to_le_bytes()));
         let buffer = Aligned::<A16, _>(self.bytes);
-        let write = Write::new(core::ptr::addr_of!(buffer) as usize as u32, channel as u8);
+        let write = Write::new(
+            u32::try_from(core::ptr::addr_of!(buffer) as usize).unwrap(),
+            channel as u8,
+        );
         while peripherals.status.read().full() {
             cortex_a::asm::nop();
         }
@@ -224,7 +227,7 @@ impl Request {
                     return Response {
                         bytes: unsafe { core::ptr::read_volatile(data as usize as *const _) },
                     };
-                } else if data == core::ptr::addr_of!(buffer) as usize as u32 {
+                } else if data as usize == core::ptr::addr_of!(buffer) as usize {
                     return Response {
                         bytes: unsafe { core::ptr::read_volatile(&*buffer) },
                     };

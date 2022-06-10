@@ -1,5 +1,5 @@
-#![cfg_attr(target_arch = "aarch64", no_std)]
-#![no_main]
+#![cfg_attr(target_os = "tkern", no_std)]
+#![cfg_attr(target_os = "tkern", no_main)]
 #![feature(
     lang_items,
     asm_const,
@@ -19,7 +19,6 @@ extern crate alloc;
 #[macro_use]
 mod macros;
 
-mod allocator;
 mod hardware;
 mod output;
 mod sys;
@@ -29,14 +28,18 @@ mod time;
 #[doc(inline)]
 pub use core;
 
+use allocator::Allocator;
 use atags::AtagMemory;
-use core::arch::global_asm;
 use core::num::NonZeroUsize;
 use core::ptr::NonNull;
 use utils::ReadCell;
 use videocore_mailbox::VideoCore;
 
+#[cfg(target_os = "tkern")]
+use core::arch::global_asm;
+
 // Assembly counterpart to this file.
+#[cfg(target_os = "tkern")]
 global_asm!(include_str!("boot.s"));
 
 static START_ADDRESS: ReadCell<u64> = ReadCell::new(0);
@@ -108,9 +111,7 @@ pub extern "C" fn kernel_main() -> ! {
             memory.start + memory.size
         );
         let length = NonZeroUsize::new(memory_length).expect("Memory size is detected to be 0");
-        unsafe {
-            allocator::init(NonNull::new_unchecked(memory_start as *mut ()), length);
-        }
+        unsafe { ALLOCATOR.init(NonNull::new_unchecked(memory_start as *mut ()), length) }
         // unsafe {
         //     hardware.spawn_other_cores(NonNull::new_unchecked(START_ADDRESS.copied() as *mut ()));
         // }
@@ -120,33 +121,12 @@ pub extern "C" fn kernel_main() -> ! {
     }
 }
 
-#[cfg(not(any(test, target_os = "linux")))]
-mod rust_internals {
-    use core::panic::PanicInfo;
+#[cfg_attr(target_os = "tkern", global_allocator)]
+static mut ALLOCATOR: Allocator = unsafe { Allocator::new() };
 
-    #[lang = "eh_personality"]
-    pub extern "C" fn eh_personality() {}
+#[cfg(target_os = "tkern")]
+mod rust_internals;
 
-    #[panic_handler]
-    fn panic(info: &'_ PanicInfo<'_>) -> ! {
-        let (location, line, column) = match info.location() {
-            Some(loc) => (loc.file(), loc.line(), loc.column()),
-            _ => ("???", 0, 0),
-        };
-
-        warn!(
-            "Panic: {}\
-            \n       {}:{}:{}\n",
-            info.message().unwrap_or(&format_args!("explicit panic")),
-            location,
-            line,
-            column
-        );
-        loop {}
-    }
-
-    #[alloc_error_handler]
-    fn oom(layout: core::alloc::Layout) -> ! {
-        panic!("Could not allocate {:?}", layout);
-    }
-}
+// Needed for code coverage
+#[cfg(not(target_os = "tkern"))]
+fn main() {}

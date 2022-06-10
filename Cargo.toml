@@ -1,3 +1,13 @@
+[workspace]
+members = [
+    "libs/allocator",
+    "libs/atags",
+    "libs/drivers",
+    "libs/tkern_derive_utils",
+    "libs/utils",
+    "libs/videocore_mailbox"
+]
+
 [package]
 name = "tkern"
 version = "0.0.0"
@@ -5,6 +15,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+allocator = { path = "libs/allocator" }
 cortex-a = "7.3.1"
 tock-registers = "0.7.0"
 tkern_derive_utils = { path = "libs/tkern_derive_utils" }

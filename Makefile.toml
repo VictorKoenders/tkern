@@ -3,7 +3,7 @@ default_to_workspace = false
 skip_core_tasks = true
 
 [env]
-ARCH = "aarch64-unknown-none-softfloat"
+ARCH = "aarch64-unknown-tkern"
 OUT_DIR = "target/${ARCH}/debug"
 TKERN_TARGET_BOARD = "raspi3b" # or raspi4
 
@@ -14,16 +14,17 @@ ADDITIONAL_CARGO_ARGS = "--release"
 [tasks.default]
 alias = "build"
 
-[tasks.objdump]
-install_crate = "cargo-binutils"
-command = "cargo"
-args = ["objdump", "--target", "${ARCH}", "--", "-D"]
-dependencies = [
-    "get_env"
-]
+# Borked
+# [tasks.objdump]
+# install_crate = "cargo-binutils"
+# command = "cargo"
+# args = ["objdump", "--target", "${ARCH}.json", "-Zbuild-std=core,alloc", "--", "-D"]
+# dependencies = [
+#     "get_env"
+# ]
 
 [tasks.doc]
-script = "cargo doc --target ${ARCH} --open"
+script = "cargo doc --target ${ARCH}.json --open -Zbuild-std=core,alloc"
 
 [tasks.docs]
 alias = "doc"
@@ -36,9 +37,17 @@ dependencies = [
 ]
 
 [tasks.build_cargo]
+private = true
 command = "cargo"
-args = ["build", "--target", "${ARCH}"]
+args = ["build", "--target", "${ARCH}.json", "-Zbuild-std=core,alloc"]
 dependencies = [ "get_env" ]
+
+[tasks.grcov]
+script = '''
+cargo test --workspace --all-targets
+grcov . -s . --binary-path ./target/debug/ -t html --branch --ignore-not-existing -o ./coverage/
+'''
+env = { RUSTFLAGS = "-Cinstrument-coverage", LLVM_PROFILE_FILE = "${CARGO_MAKE_WORKING_DIRECTORY}/coverage/tkern-%p-%m.profraw" }
 
 [tasks.run]
 private = false
@@ -67,7 +76,6 @@ dependencies = ["build"]
 
 [tasks.lints]
 script = "cargo fmt --all && cargo clippy --workspace --all-targets"
-dependencies = ["get_env"]
 
 [tasks.get_env]
 script_runner = "@duckscript"

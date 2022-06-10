@@ -1,2 +1,2 @@
-[target.aarch64-unknown-none-softfloat]
-rustflags = ["-C", "link-arg=--script=linker.ld"]
+[target.aarch64-unknown-tkern]
+rustflags = [ "-C", "link-arg=--script=linker.ld" ]

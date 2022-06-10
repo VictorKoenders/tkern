@@ -1,19 +1,21 @@
 #![no_std]
 #![warn(unsafe_op_in_unsafe_fn, rust_2018_idioms, clippy::pedantic)]
 
+mod const_non_null;
+
 pub mod atomic_mutex;
-pub mod const_non_null;
+pub use self::const_non_null::ConstNonNull;
 
 use core::{cell::UnsafeCell, fmt, ops};
 
 // TODO: Replace this with `u16` so we don't have to do float calculations
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum HumanReadableSize {
-    Bytes(f32),
-    KiloBytes(f32),
-    MegaBytes(f32),
-    GigaBytes(f32),
-    TeraBytes(f32),
+    Bytes(f64),
+    KiloBytes(f64),
+    MegaBytes(f64),
+    GigaBytes(f64),
+    TeraBytes(f64),
 }
 
 impl fmt::Display for HumanReadableSize {
@@ -30,8 +32,14 @@ impl fmt::Display for HumanReadableSize {
 }
 
 impl HumanReadableSize {
+    /// Create a human readable size from a given `usize`
+    ///
+    /// # Panics
+    ///
+    /// Will panic if the given `size` does not fit in an f64, which happens if the size is larger than `u32::MAX`
+    #[must_use]
     pub fn new(size: usize) -> Self {
-        let mut result = HumanReadableSize::Bytes(size as f32);
+        let mut result = HumanReadableSize::Bytes(f64::from(u32::try_from(size).unwrap()));
         while result.value() > 1024. {
             if let Some(new_format) = result.next() {
                 result = new_format;
@@ -42,7 +50,8 @@ impl HumanReadableSize {
         result
     }
 
-    pub fn value(&self) -> f32 {
+    #[must_use]
+    pub fn value(&self) -> f64 {
         match self {
             HumanReadableSize::Bytes(v)
             | HumanReadableSize::KiloBytes(v)

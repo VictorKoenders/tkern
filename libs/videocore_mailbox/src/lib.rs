@@ -28,6 +28,7 @@ impl<'a> VideoCore<'a> {
     /// `base` must point at a valid MMIO base (e.g. `0x2000_0000` for raspberry pi 1 or `0x3f000_0000` for raspberry pi 2 and up)
     ///
     /// Only once instance of a `VideoCore` should exist.
+    #[must_use]
     pub unsafe fn new(base: NonNull<()>) -> Self {
         Self {
             peripherals: unsafe {

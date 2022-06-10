@@ -20,6 +20,7 @@ impl<'a> Atags<'a> {
     /// # Safety
     ///
     /// The given address must be a valid atag header.
+    #[must_use]
     pub unsafe fn new(addr: NonNull<()>) -> Self {
         Self {
             addr,
@@ -28,6 +29,7 @@ impl<'a> Atags<'a> {
     }
 
     /// Returns an iterator of [`Atag`]. The first one should always be a [`AtagCore`] variant.
+    #[must_use]
     pub fn iter(&'a self) -> AtagIter<'a> {
         AtagIter {
             _atags: self,
@@ -53,7 +55,7 @@ impl<'a> Iterator for AtagIter<'a> {
             let addr = pointer_offset(addr, core::mem::size_of::<AtagHeader>());
 
             match header.tag {
-                0x54410001 => {
+                0x5441_0001 => {
                     if header.size == 2 {
                         // empty core
                         None
@@ -61,14 +63,14 @@ impl<'a> Iterator for AtagIter<'a> {
                         Some(Atag::Core(unsafe { addr.cast().as_ref() }))
                     }
                 }
-                0x54410002 => Some(Atag::Memory(unsafe { addr.cast().as_ref() })),
-                0x54410003 => Some(Atag::VideoText(unsafe { addr.cast().as_ref() })),
-                0x54410004 => Some(Atag::RamDisk(unsafe { addr.cast().as_ref() })),
-                0x54410005 => Some(Atag::InitRd2(unsafe { addr.cast().as_ref() })),
-                0x54410006 => Some(Atag::Serial(unsafe { addr.cast().as_ref() })),
-                0x54410007 => Some(Atag::Revision(unsafe { addr.cast().as_ref() })),
-                0x54410008 => Some(Atag::VideoLfb(unsafe { addr.cast().as_ref() })),
-                0x54410009 => Some(Atag::CommandLine {
+                0x5441_0002 => Some(Atag::Memory(unsafe { addr.cast().as_ref() })),
+                0x5441_0003 => Some(Atag::VideoText(unsafe { addr.cast().as_ref() })),
+                0x5441_0004 => Some(Atag::RamDisk(unsafe { addr.cast().as_ref() })),
+                0x5441_0005 => Some(Atag::InitRd2(unsafe { addr.cast().as_ref() })),
+                0x5441_0006 => Some(Atag::Serial(unsafe { addr.cast().as_ref() })),
+                0x5441_0007 => Some(Atag::Revision(unsafe { addr.cast().as_ref() })),
+                0x5441_0008 => Some(Atag::VideoLfb(unsafe { addr.cast().as_ref() })),
+                0x5441_0009 => Some(Atag::CommandLine {
                     cmdline: unsafe {
                         core::slice::from_raw_parts(addr.cast().as_ptr(), byte_length)
                     },
@@ -83,11 +85,10 @@ impl<'a> Iterator for AtagIter<'a> {
         };
         self.addr = if result.is_none() {
             None
-        } else if let Some(offset) = (header.size as usize).checked_mul(4) {
-            // check against overflows
-            Some(pointer_offset(addr, offset))
         } else {
-            None
+            (header.size as usize)
+                .checked_mul(4)
+                .map(|offset| pointer_offset(addr, offset))
         };
         result
     }
@@ -216,7 +217,7 @@ pub struct AtagRamDisk {
 
 /// Location of a compressed ramdisk image, usually combined with an [`AtagRamDisk`]. Can be used as an initial root file
 /// system with the addition of a command line parameter of 'root=/dev/ram'. This tag supersedes the original
-/// ATAG_INITRD which used virtual addressing, this was a mistake and produced issues on some systems. All new
+/// `ATAG_INITRD` which used virtual addressing, this was a mistake and produced issues on some systems. All new
 /// bootloaders should use this tag in preference.
 #[repr(C)]
 #[derive(Debug)]

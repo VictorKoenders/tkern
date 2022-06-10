@@ -12,6 +12,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "allocator"
+version = "0.0.0"
+dependencies = [
+ "bitflags",
+ "utils",
+]
+
+[[package]]
 name = "as-slice"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -26,6 +34,12 @@ version = "0.0.2"
 dependencies = [
  "custom_debug_derive",
 ]
+
+[[package]]
+name = "autocfg"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "bitfield"
@@ -66,10 +80,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "drivers"
+version = "0.0.0"
+
+[[package]]
 name = "font8x8"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "875488b8711a968268c7cf5d139578713097ca4635a76044e8fe8eedf831d07e"
+
+[[package]]
+name = "memoffset"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
+dependencies = [
+ "autocfg",
+]
 
 [[package]]
 name = "proc-macro2"
@@ -122,6 +149,7 @@ dependencies = [
 name = "tkern"
 version = "0.0.0"
 dependencies = [
+ "allocator",
  "atags",
  "bitflags",
  "bytemuck",
@@ -173,6 +201,7 @@ dependencies = [
  "bytemuck",
  "cortex-a",
  "font8x8",
+ "memoffset",
  "tkern_derive_utils",
  "volatile",
 ]
