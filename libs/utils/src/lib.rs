@@ -4,7 +4,7 @@
 pub mod atomic_mutex;
 pub mod const_non_null;
 
-use core::fmt;
+use core::{cell::UnsafeCell, fmt, ops};
 
 // TODO: Replace this with `u16` so we don't have to do float calculations
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -62,3 +62,57 @@ impl HumanReadableSize {
         }
     }
 }
+
+/// A cell that is safe to read from but unsafe to write to. Useful for init-once static variables.
+pub struct ReadCell<T>(UnsafeCell<T>);
+
+impl<T> ReadCell<T> {
+    /// Initialize a new readcell
+    pub const fn new(t: T) -> Self {
+        Self(UnsafeCell::new(t))
+    }
+
+    /// Get a reference to the value in this readcell
+    pub fn get(&self) -> &T {
+        // Safety: if the contract of `.set` is upheld, there should be no writes to this readcell while we have a read reference.
+        unsafe { &*self.0.get() }
+    }
+
+    /// Write a value to this readcell.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that there are no outstanding references to `.get` for this cell.
+    pub unsafe fn set(&self, value: T) {
+        unsafe {
+            *self.0.get() = value;
+        }
+    }
+
+    /// Get a copy of the inner `T`
+    pub fn copied(&self) -> T
+    where
+        T: Copy,
+    {
+        *self.get()
+    }
+
+    /// Get a clone of the inner `T`
+    pub fn cloned(&self) -> T
+    where
+        T: Clone,
+    {
+        self.get().clone()
+    }
+}
+
+impl<T> ops::Deref for ReadCell<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.get()
+    }
+}
+
+unsafe impl<T> Sync for ReadCell<T> {}
+unsafe impl<T> Send for ReadCell<T> {}

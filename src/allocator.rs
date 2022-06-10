@@ -196,8 +196,10 @@ impl Header {
 
     pub fn update(&mut self, layout: Layout, prefix: u8, length: usize) {
         self.data_length = layout.size() as u32;
-        self.total_length = length as u32;
         self.prefix_len = prefix;
+        if self.total_length == 0 {
+            self.total_length = length as u32;
+        }
     }
 
     pub fn data(&mut self) -> NonNull<[u8]> {
@@ -215,23 +217,42 @@ impl Header {
     }
 
     pub(crate) fn get_prefix_and_length(layout: Layout) -> (u8, usize) {
-        let header_len = core::mem::size_of::<Header>();
-        let mut prefix: u8 = 0;
-        let mut len = header_len + layout.size();
+        let header_layout = Layout::new::<Header>();
 
-        // If the end of the header length is not properly aligned, add a prefix
-        if header_len % layout.align() != 0 {
-            prefix = (layout.align() - (header_len % layout.align())) as u8;
-            debug_assert!((header_len + prefix as usize) % layout.align() == 0);
-            len += prefix as usize;
-        }
-        // If the end of the header + prefix + len is not 16-byte aligned, add a suffix
-        if len % 16 != 0 {
-            len += 16 - (len % 16);
-            debug_assert!(len % 16 == 0);
-        }
-        (prefix, len)
+        let prefix: u8 = padding_needed_for(header_layout.size(), layout.align()) as u8;
+        let with_prefix_length = header_layout.size() + layout.size() + prefix as usize;
+        let total_length =
+            with_prefix_length + padding_needed_for(with_prefix_length, header_layout.align());
+
+        debug_assert!((header_layout.size() + prefix as usize) % layout.align() == 0);
+        debug_assert!(total_length % 16 == 0);
+        (prefix, total_length)
     }
+}
+
+const fn padding_needed_for(addr: usize, next_align: usize) -> usize {
+    // Rounded up value is:
+    //   len_rounded_up = (len + align - 1) & !(align - 1);
+    // and then we return the padding difference: `len_rounded_up - len`.
+    //
+    // We use modular arithmetic throughout:
+    //
+    // 1. align is guaranteed to be > 0, so align - 1 is always
+    //    valid.
+    //
+    // 2. `len + align - 1` can overflow by at most `align - 1`,
+    //    so the &-mask with `!(align - 1)` will ensure that in the
+    //    case of overflow, `len_rounded_up` will itself be 0.
+    //    Thus the returned padding, when added to `len`, yields 0,
+    //    which trivially satisfies the alignment `align`.
+    //
+    // (Of course, attempts to allocate blocks of memory whose
+    // size and padding overflow in the above manner should cause
+    // the allocator to yield an error anyway.)
+
+    let len_rounded_up =
+        addr.wrapping_add(next_align).wrapping_sub(1) & !next_align.wrapping_sub(1);
+    len_rounded_up.wrapping_sub(addr)
 }
 
 bitflags::bitflags! {

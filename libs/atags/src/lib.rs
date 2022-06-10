@@ -83,8 +83,11 @@ impl<'a> Iterator for AtagIter<'a> {
         };
         self.addr = if result.is_none() {
             None
+        } else if let Some(offset) = (header.size as usize).checked_mul(4) {
+            // check against overflows
+            Some(pointer_offset(addr, offset))
         } else {
-            Some(pointer_offset(addr, (header.size * 4) as usize))
+            None
         };
         result
     }

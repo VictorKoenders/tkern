@@ -1,22 +1,17 @@
-#![allow(unused_macro_rules)]
-
-macro_rules! println {
-    () => {
-        crate::output::print(format_args!("\n"));
-    };
-    ($e:expr) => {
-        crate::output::print(format_args_nl!($e));
-    };
+#[allow(unused_macros)]
+macro_rules! info {
     ($e:expr $(, $a: expr)*) => {
-        crate::output::print(format_args_nl!($e $(, $a)*));
+        crate::output::info(|w| {
+            let _ = core::fmt::Write::write_fmt(w, format_args_nl!($e $(, $a)*));
+        });
     }
 }
 
-macro_rules! print {
-    ($e:expr) => {
-        crate::output::print(format_args!($e));
-    };
+#[allow(unused_macros)]
+macro_rules! warn {
     ($e:expr $(, $a: expr)*) => {
-        crate::output::print(format_args!($e $(, $a)*));
+        crate::output::warn(|w| {
+            let _ = core::fmt::Write::write_fmt(w, format_args_nl!($e $(, $a)*));
+        });
     }
 }

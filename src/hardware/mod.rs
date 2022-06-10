@@ -150,6 +150,7 @@ impl Hardware {
     /// The caller must ensure that the `start_address` is a valid point on which the other cores can start.
     ///
     /// The caller must ensure that this function gets called exactly once on the main core.
+    #[allow(dead_code)]
     pub unsafe fn spawn_other_cores(&self, start_address: NonNull<()>) {
         if !self.is_primary_core() {
             return;
@@ -159,15 +160,15 @@ impl Hardware {
             unsafe {
                 core::ptr::write_volatile(addr as *mut usize, start_address.as_ptr() as usize);
             }
-            for _ in 0..1_000 {
-                cortex_a::asm::nop();
-            }
         }
     }
 
     #[allow(clippy::unused_self)]
+    pub(crate) fn core(&self) -> u8 {
+        (MPIDR_EL1.get() & 0xFF) as u8
+    }
+    #[allow(clippy::unused_self)]
     pub(crate) fn is_primary_core(&self) -> bool {
-        let core = (MPIDR_EL1.get() & 0xFF) as u8;
-        core == 0
+        self.core() == 0
     }
 }

@@ -13,6 +13,7 @@
 #![warn(unsafe_op_in_unsafe_fn, clippy::pedantic, rust_2018_idioms)]
 #![allow(clippy::cast_possible_truncation)]
 
+#[allow(unused_extern_crates)]
 extern crate alloc;
 
 #[macro_use]
@@ -22,6 +23,7 @@ mod allocator;
 mod hardware;
 mod output;
 mod sys;
+mod time;
 
 // This will include the core documentation into our docs
 #[doc(inline)]
@@ -31,24 +33,30 @@ use atags::AtagMemory;
 use core::arch::global_asm;
 use core::num::NonZeroUsize;
 use core::ptr::NonNull;
+use utils::ReadCell;
 use videocore_mailbox::VideoCore;
 
 // Assembly counterpart to this file.
 global_asm!(include_str!("boot.s"));
 
-/// This is called from `src/boot.s`. See that file for more info
+static START_ADDRESS: ReadCell<u64> = ReadCell::new(0);
+static ATAG_ADDR: ReadCell<u64> = ReadCell::new(0);
+
+/// Entry point of the kernel. Called from `sys::_start_rust`.
+///
+/// When this function is called, the following static variables will be initialized:
+/// - [`START_ADDRESS`]
+/// - [`ATAG_ADDR`]
+///
+/// This function will initialize:
+/// - A [`videocore_mailbox::FrameBuffer`]
+/// - The [memory allocator](allocator)
 ///
 /// # Panics
 ///
 /// Will panic if the memory size could not be detected, or if it was 0
 #[no_mangle]
-pub extern "C" fn _start_rust(
-    atag_addr: u64, // x0: 32 bit pointer to atag in memory (primary core only) / 0 (secondary cores)
-    _x1: u64,       // always 0 for now
-    _x2: u64,       // always 0 for now
-    _x3: u64,       // always 0 for now
-    start_address: u64, // x4: The start address on which the kernel started. This will be the `_start` label in our `boot.s`
-) -> ! {
+pub extern "C" fn kernel_main() -> ! {
     let hardware = hardware::detect();
     if hardware.is_primary_core() {
         let mut videocore = unsafe { VideoCore::new(hardware.mmio_base_address) };
@@ -56,32 +64,36 @@ pub extern "C" fn _start_rust(
         let framebuffer = videocore.allocate_framebuffer(800, 600, 24);
         crate::output::framebuffer::init(framebuffer);
 
-        println!("Hello Rust Kernel world!");
+        info!("Hello Rust Kernel world!");
 
         let mut memory: Option<AtagMemory> = None;
-        if let Some(ptr) = NonNull::new(atag_addr as *mut ()) {
+        if let Some(ptr) = NonNull::new(*ATAG_ADDR as *mut ()) {
             let atag = unsafe { atags::Atags::new(ptr) };
-            println!("Atag:");
+            info!("Atag:");
             for tag in atag.iter() {
-                print!("  {:?}", tag);
-                match tag {
-                    atags::Atag::Memory(mem) => {
-                        memory = Some(mem.clone());
-                        println!();
+                output::info(|w| {
+                    use core::fmt::Write as _;
+                    let _ = w.write_fmt(format_args!("  {:?}", tag));
+                    match tag {
+                        atags::Atag::Memory(mem) => {
+                            memory = Some(mem.clone());
+                            let _ = w.write_char('\n');
+                        }
+                        _ => {
+                            let _ = w.write_str(" (ignored)\n");
+                        }
                     }
-                    _ => {
-                        println!(" (ignored)");
-                    }
-                }
+                });
             }
         }
-        println!(
+        info!(
             "Kernel is between 0x{:08X} and 0x{:08X} (size {})",
             sys::kernel_start(),
             sys::kernel_end(),
             utils::HumanReadableSize::new(sys::kernel_end() - sys::kernel_start())
         );
-        println!("{:#?}", hardware);
+        info!("{:#?}", hardware);
+        info!("EL {:?}", sys::current_exception_level());
 
         let memory = memory.expect("Memory size not detected");
         let mut memory_start = (memory.start as usize).max(sys::kernel_end());
@@ -89,8 +101,8 @@ pub extern "C" fn _start_rust(
             memory_start += 16 - (memory_start % 16);
         }
         let memory_length = memory.size as usize + memory.start as usize - memory_start;
-        println!(
-            "Memory starts at 0x{:08X} and is {:?} (end = 0x{:08X})",
+        info!(
+            "Memory starts at 0x{:08X} and is {} (end = 0x{:08X})",
             memory_start,
             utils::HumanReadableSize::new(memory_length as usize),
             memory.start + memory.size
@@ -99,15 +111,10 @@ pub extern "C" fn _start_rust(
         unsafe {
             allocator::init(NonNull::new_unchecked(memory_start as *mut ()), length);
         }
-        let box_ = alloc::boxed::Box::new(5);
-        println!("Box allocated at {:p}", box_);
-        drop(box_);
-
-        unsafe {
-            hardware.spawn_other_cores(NonNull::new_unchecked(start_address as usize as *mut _));
-        }
+        // unsafe {
+        //     hardware.spawn_other_cores(NonNull::new_unchecked(START_ADDRESS.copied() as *mut ()));
+        // }
     }
-
     loop {
         cortex_a::asm::wfe();
     }
@@ -127,8 +134,8 @@ mod rust_internals {
             _ => ("???", 0, 0),
         };
 
-        println!(
-            "\nPanic: {}\
+        warn!(
+            "Panic: {}\
             \n       {}:{}:{}\n",
             info.message().unwrap_or(&format_args!("explicit panic")),
             location,
