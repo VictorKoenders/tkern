@@ -45,9 +45,9 @@ dependencies = [ "get_env" ]
 [tasks.grcov]
 script = '''
 cargo test --workspace --all-targets
-grcov . -s . --binary-path ./target/debug/ -t html --branch --ignore-not-existing -o ./coverage/
+grcov target/coverage/tkern/ --llvm --ignore build.rs -s . --binary-path ./target/debug/ -t html --branch -o ./target/coverage
 '''
-env = { RUSTFLAGS = "-Cinstrument-coverage", LLVM_PROFILE_FILE = "${CARGO_MAKE_WORKING_DIRECTORY}/coverage/tkern-%p-%m.profraw" }
+env = { RUSTFLAGS = "-Cinstrument-coverage", LLVM_PROFILE_FILE = "${CARGO_MAKE_WORKING_DIRECTORY}/target/coverage/tkern/tkern-%p-%m.profraw" }
 
 [tasks.run]
 private = false

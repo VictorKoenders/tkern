@@ -64,6 +64,14 @@ impl Allocator {
         let start = *offset;
 
         loop {
+            if *offset + length > self.length.get() {
+                *offset = 0;
+                // Make sure we don't loop forever if `length` is larger than `self.length.get()`
+                if *offset + length > self.length.get() {
+                    return None;
+                }
+            }
+
             // Get the header at the current offset
             let header = unsafe {
                 self.start
@@ -78,9 +86,21 @@ impl Allocator {
                 header.total_length as usize
             };
 
-            // If the offset is past our max length, set the offset to 0
-            if *offset > self.length.get() {
+            // If the offset is at or past our max length, set the offset to 0
+            if *offset >= self.length.get() {
                 *offset = 0;
+                // Offset 0 is initialized when the allocator is created, so we don't have to check for that
+            } else if !header.flags.contains(HeaderFlags::NEXT_INITIALIZED) {
+                // The next header is not initialized. Mark it as initialized in this header and clear out the next header.
+                header.flags.insert(HeaderFlags::NEXT_INITIALIZED);
+
+                let next_header = unsafe {
+                    self.start
+                        .map_addr(|a| NonZeroUsize::new_unchecked(a.get() + *offset))
+                        .cast::<Header>()
+                        .as_mut()
+                };
+                *next_header = Header::default();
             }
 
             // If the flag is not occupied, and either the length is 0 or the requested allocation fits in this header, return this header
@@ -89,30 +109,11 @@ impl Allocator {
             {
                 break Some(header);
             }
-            // else: get the next header
 
             // We looped around and didn't find an empty spot
             if *offset == start {
                 break None;
             }
-            // The next header is initialized or the we're about to wrap around the memory, do nothing
-            if header.flags.contains(HeaderFlags::NEXT_INITIALIZED)
-                || *offset < header as *mut _ as usize
-            {
-                continue;
-            }
-
-            // The next header is not initialized. Mark it as initialized in this header and clear out the next header.
-            header.flags.insert(HeaderFlags::NEXT_INITIALIZED);
-
-            let next_header = unsafe {
-                self.start
-                    .map_addr(|a| NonZeroUsize::new_unchecked(a.get() + *offset))
-                    .cast::<Header>()
-                    .as_mut()
-            };
-            *next_header = Header::default();
-            break Some(next_header);
         }
     }
 }
@@ -312,38 +313,155 @@ fn test_header_size() {
     assert_eq!(core::mem::size_of::<Header>(), 16);
 }
 
+#[cfg(test)]
+fn with_randomized_memory<const N: usize>(mut buffer: [u8; N], mut cb: impl FnMut(&Allocator)) {
+    use rand::{thread_rng, Rng};
+
+    let mut rng = thread_rng();
+
+    for _ in 0..100 {
+        rng.fill(buffer.as_mut_slice());
+        let allocator = Allocator::new_from_slice(&mut buffer);
+        cb(&allocator);
+    }
+}
+
 #[test]
 fn test_alloc_dealloc() {
     extern crate alloc;
     use alloc::vec::Vec;
 
-    let mut buffer = [0u8; 100];
-    let allocator = Allocator::new_from_slice(&mut buffer);
-    let mut vec = Vec::new_in(&allocator);
-    assert!(vec.is_empty());
-    vec.push(1u32);
-    assert_eq!(vec.len(), 1);
+    with_randomized_memory([0u8; 100], |allocator| {
+        let mut vec = Vec::new_in(&allocator);
+        assert!(vec.is_empty());
+        vec.push(1u32);
+        assert_eq!(vec.len(), 1);
 
-    let header = unsafe { allocator.start.cast::<Header>().as_ref() };
-    assert_eq!(
-        header.data_length as usize,
-        vec.capacity() * core::mem::size_of::<u32>()
-    );
-    assert_eq!(header.prefix_len, 0);
-    assert_eq!(header.flags, HeaderFlags::OCCUPIED);
+        let header = unsafe { allocator.start.cast::<Header>().as_ref() };
+        assert_eq!(
+            header.data_length as usize,
+            vec.capacity() * core::mem::size_of::<u32>()
+        );
+        assert_eq!(header.prefix_len, 0);
+        assert_eq!(
+            header.flags,
+            HeaderFlags::OCCUPIED | HeaderFlags::NEXT_INITIALIZED
+        );
 
-    let old_ptr = vec.as_ptr();
+        drop(vec);
 
-    vec.shrink_to_fit();
+        let header = unsafe { allocator.start.cast::<Header>().as_ref() };
+        assert_eq!(header.flags, HeaderFlags::NEXT_INITIALIZED);
+    });
+}
 
-    // shrinking should keep the same pointer
-    assert_eq!(vec.as_ptr(), old_ptr);
+#[test]
+fn test_shrink_no_alloc() {
+    extern crate alloc;
+    use alloc::vec::Vec;
 
-    let header = unsafe { Header::from_ptr(NonNull::new_unchecked(vec.as_mut_ptr()).cast()) };
-    assert_eq!(
-        header.data_length as usize,
-        vec.capacity() * core::mem::size_of::<u32>()
-    );
-    assert_eq!(header.prefix_len, 0);
-    assert_eq!(header.flags, HeaderFlags::OCCUPIED);
+    with_randomized_memory([0u8; 100], |allocator| {
+        let mut vec = Vec::new_in(&allocator);
+        assert!(vec.is_empty());
+        vec.push(1u32);
+        assert_eq!(vec.len(), 1);
+
+        let header = unsafe { allocator.start.cast::<Header>().as_ref() };
+        assert_eq!(
+            header.data_length as usize,
+            vec.capacity() * core::mem::size_of::<u32>()
+        );
+        assert_eq!(header.prefix_len, 0);
+        assert_eq!(
+            header.flags,
+            HeaderFlags::OCCUPIED | HeaderFlags::NEXT_INITIALIZED
+        );
+
+        let allocator_offset = allocator.offset.lock().copy();
+        let previous_size = vec.capacity() * core::mem::size_of::<u32>();
+
+        vec.shrink_to_fit();
+
+        // Make sure that the size is actually different
+        assert!(previous_size != vec.capacity() * core::mem::size_of::<u32>());
+
+        let header = unsafe { allocator.start.cast::<Header>().as_ref() };
+        assert_eq!(
+            header.data_length as usize,
+            vec.capacity() * core::mem::size_of::<u32>()
+        );
+        assert_eq!(header.prefix_len, 0);
+        assert_eq!(
+            header.flags,
+            HeaderFlags::OCCUPIED | HeaderFlags::NEXT_INITIALIZED
+        );
+
+        // assert that the allocator did not change its offset
+        assert_eq!(allocator_offset, allocator.offset.lock().copy());
+    });
+}
+
+#[test]
+fn test_oom() {
+    use std::alloc::Allocator as _;
+
+    with_randomized_memory([0u8; 32], |allocator| {
+        let err_layout = Layout::from_size_align(20, 1).unwrap();
+        let ok_layout = Layout::from_size_align(1, 1).unwrap();
+
+        // Cannot allocate too much
+        assert!(allocator.allocate(err_layout).is_err());
+
+        // can allocate `ok_layout`
+        let allocated = allocator
+            .allocate(ok_layout)
+            .expect("Could not allocate ok_layout");
+        assert_eq!(allocator.offset.lock().copy(), 0);
+        // but only once
+        assert!(allocator.allocate(ok_layout).is_err());
+
+        // deallocate the `allocated`
+        unsafe {
+            allocator.deallocate(allocated.cast(), ok_layout);
+        }
+        // now we should be able to allocate it again
+        assert!(allocator.allocate(ok_layout).is_ok());
+    });
+}
+
+#[test]
+fn test_double_header_initialize() {
+    use std::alloc::Allocator as _;
+
+    with_randomized_memory([0u8; 64], |allocator| {
+        let ok_layout = Layout::from_size_align(1, 1).unwrap();
+
+        // our buffer fits exactly 2x `ok_layout`
+        let first = allocator
+            .allocate(ok_layout)
+            .expect("Could not allocate first");
+        let second = allocator
+            .allocate(ok_layout)
+            .expect("Could not allocate second");
+
+        // the allocator should be pointing at the start
+        assert_eq!(allocator.offset.lock().copy(), 0);
+
+        // a new allocation should fail
+        assert!(allocator.allocate(ok_layout).is_err());
+
+        // deallocate the 2 pointers
+        unsafe {
+            allocator.deallocate(first.cast(), ok_layout);
+            allocator.deallocate(second.cast(), ok_layout);
+        }
+
+        // allocate the 2 blocks again
+        let _first = allocator
+            .allocate(ok_layout)
+            .expect("Could not allocate first");
+        let _second = allocator
+            .allocate(ok_layout)
+            .expect("Could not allocate second");
+    });
 }
