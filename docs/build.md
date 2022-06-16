@@ -10,6 +10,12 @@ Also install [cargo-make](https://sagiegurari.github.io/cargo-make/):
 cargo install --locked cargo-make
 ```
 
+And rust-src:
+
+```sh
+rustup component add rust-src
+```
+
 Then building this kernel should be as simple as running 
 
 ```sh
