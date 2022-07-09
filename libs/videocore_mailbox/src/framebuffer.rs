@@ -10,9 +10,9 @@ pub struct FrameBuffer {
     pixels_per_row: u32,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[allow(clippy::upper_case_acronyms)]
-pub(super) enum PixelOrder {
+pub enum PixelOrder {
     BGR = 0x00,
     RGB = 0x01,
 }

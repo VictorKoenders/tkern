@@ -7,7 +7,8 @@ mod mailbox;
 mod peripherals;
 
 use core::{num::NonZeroUsize, ptr::NonNull};
-use mailbox::Channel;
+use framebuffer::PixelOrder;
+use mailbox::{items, Channel};
 use peripherals::Peripherals;
 
 pub use framebuffer::{Color, FrameBuffer};
@@ -43,50 +44,28 @@ impl<'a> VideoCore<'a> {
 
     pub fn allocate_framebuffer(&mut self, width: u32, height: u32, depth: u32) -> FrameBuffer {
         let response = mailbox::Request::new()
-            .set_framebuffer_screen_size(width, height)
-            .set_framebuffer_virtual_screen_size(width, height)
-            .set_framebuffer_depth(depth)
-            .set_framebuffer_depth(depth)
-            .set_framebuffer_pixel_order(framebuffer::PixelOrder::RGB)
-            .allocate_framebuffer(16)
+            .set(items::FramebufferScreenSize { width, height })
+            .set(items::FramebufferVirtualScreenSize { width, height })
+            .set(items::FramebufferDepth { depth })
+            .set(items::FramebufferPixelOrder {
+                order: PixelOrder::RGB,
+            })
+            .get(items::FramebufferAllocate::alignment(16))
             .send(self.peripherals, Channel::PropertyToVC);
-        let mut width = width;
-        let mut height = height;
-        let mut depth = depth;
-        let mut pixel_order = framebuffer::PixelOrder::RGB;
-        let mut framebuffer_pointer = 0;
-        let mut framebuffer_size = 0;
-        for item in response.iter() {
-            match item.kind() {
-                mailbox::ItemKind::SetFramebufferScreenSize => {
-                    width = item.u32(0);
-                    height = item.u32(1);
-                }
-                mailbox::ItemKind::SetFramebufferDepth => {
-                    depth = item.u32(0);
-                }
-                mailbox::ItemKind::SetFramebufferPixelOrder => {
-                    pixel_order = if item.u32(0) == 0x01 {
-                        framebuffer::PixelOrder::RGB
-                    } else {
-                        framebuffer::PixelOrder::BGR
-                    };
-                }
-                mailbox::ItemKind::AllocateFramebuffer => {
-                    framebuffer_pointer = item.u32(0);
-                    framebuffer_size = item.u32(1);
-                }
-                mailbox::ItemKind::SetFramebufferVirtualScreenSize => {}
-                _ => unreachable!("Unknown item kind {:?}", item.kind()),
-            }
-        }
+
+        let (screen_size, response) = response.pop();
+        let (_virtual_screen_size, response) = response.pop();
+        let (depth, response) = response.pop();
+        let (pixel_order, response) = response.pop();
+        let allocation = response.pop();
+
         FrameBuffer::new(
-            framebuffer_pointer,
-            framebuffer_size,
-            width,
-            height,
-            depth,
-            pixel_order,
+            allocation.addr,
+            allocation.size,
+            screen_size.width,
+            screen_size.height,
+            depth.depth,
+            pixel_order.order,
         )
     }
 }
