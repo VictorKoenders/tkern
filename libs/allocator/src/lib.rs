@@ -1,7 +1,7 @@
 #![cfg_attr(not(test), no_std)]
 #![feature(strict_provenance, allocator_api, nonnull_slice_from_raw_parts)]
 #![warn(unsafe_op_in_unsafe_fn, clippy::pedantic, rust_2018_idioms)]
-#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_possible_truncation, clippy::used_underscore_binding)]
 
 use core::{
     alloc::{AllocError, Layout},
@@ -124,7 +124,7 @@ unsafe impl core::alloc::Allocator for Allocator {
 
         let (prefix, length) = Header::get_prefix_and_length(layout);
 
-        let header = unsafe { self.find_free_header(&mut *offset, length) }.ok_or(AllocError)?;
+        let header = unsafe { self.find_free_header(&mut offset, length) }.ok_or(AllocError)?;
 
         header.flags.insert(HeaderFlags::OCCUPIED);
         header.update(layout, prefix, length);
