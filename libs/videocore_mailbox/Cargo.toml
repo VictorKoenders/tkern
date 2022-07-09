@@ -5,12 +5,12 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-aligned = "0.4.1"
+aligned = { version = "0.4.1", default-features = false }
 bitfield = { version = "0.13.2", default-features = false }
-bytemuck = "1.10.0"
-cortex-a = "7.4.0"
+bytemuck = { version = "1.10.0", default-features = false }
+cortex-a = { version = "7.4.0", default-features = false }
 tkern_derive_utils = { path = "../tkern_derive_utils" }
-volatile = { version = "0.4.5", features = ["unstable"] }
+volatile = { version = "0.4.5", features = ["unstable"], default-features = false }
 font8x8 = { version = "0.3.1", default-features = false, features = ["unicode"] }
 
 [dev-dependencies]
