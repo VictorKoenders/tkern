@@ -64,10 +64,12 @@ pub extern "C" fn kernel_main() -> ! {
     if hardware.is_primary_core() {
         let mut videocore = unsafe { VideoCore::new(hardware.mmio_base_address) };
 
-        let framebuffer = videocore.allocate_framebuffer(800, 600, 24);
+        let framebuffer = videocore.allocate_framebuffer(1366, 768, 24);
+        let (width, height) = (framebuffer.width(), framebuffer.height());
         crate::output::framebuffer::init(framebuffer);
 
         info!("Hello Rust Kernel world!");
+        info!("Framebuffer is {}x{} pixels", width, height);
 
         let mut memory: Option<AtagMemory> = None;
         if let Some(ptr) = NonNull::new(*ATAG_ADDR as *mut ()) {

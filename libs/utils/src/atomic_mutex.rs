@@ -17,15 +17,25 @@ impl<T> AtomicMutex<T> {
         }
     }
 
-    pub fn lock(&self) -> Guard<'_, T> {
-        while self
+    pub fn try_lock(&self) -> Option<Guard<'_, T>> {
+        if self
             .locked
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
-            .is_err()
+            .is_ok()
         {
+            Some(Guard(self))
+        } else {
+            None
+        }
+    }
+
+    pub fn lock(&self) -> Guard<'_, T> {
+        loop {
+            if let Some(guard) = self.try_lock() {
+                break guard;
+            }
             core::hint::spin_loop();
         }
-        Guard(self)
     }
 }
 

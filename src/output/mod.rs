@@ -2,14 +2,24 @@ pub use videocore_mailbox::Color;
 
 use self::{framebuffer::FrameBufferOutput, qemu::QemuOutput};
 use core::fmt::Write;
-use utils::atomic_mutex;
 
 pub mod framebuffer;
 pub mod qemu;
 
 pub fn print(cb: impl FnOnce(&mut Writer<'_>)) {
+    let mut guard_drop;
+    let lock = if let Some(guard) = framebuffer::FRAMEBUFFER.try_lock() {
+        guard_drop = guard;
+        if let Some(lock) = &mut *guard_drop {
+            Some(lock)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
     let mut writer = Writer {
-        fb: framebuffer::FRAMEBUFFER.lock(),
+        fb: lock,
         qemu: &mut QemuOutput,
     };
     cb(&mut writer);
@@ -52,7 +62,7 @@ pub fn warn(cb: impl FnOnce(&mut Writer<'_>)) {
 }
 
 pub struct Writer<'a> {
-    fb: atomic_mutex::Guard<'a, Option<FrameBufferOutput>>,
+    fb: Option<&'a mut FrameBufferOutput>,
     qemu: &'a mut QemuOutput,
 }
 
