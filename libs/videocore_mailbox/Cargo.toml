@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 aligned = "0.4.1"
 bitfield = { version = "0.13.2", default-features = false }
 bytemuck = "1.10.0"
-cortex-a = "7.3.1"
+cortex-a = "7.4.0"
 tkern_derive_utils = { path = "../tkern_derive_utils" }
 volatile = { version = "0.4.5", features = ["unstable"] }
 font8x8 = { version = "0.3.1", default-features = false, features = ["unicode"] }
