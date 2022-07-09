@@ -12,6 +12,7 @@ When creating a new crate, the following should be kept in mind:
   - `version = "0.0.0"` (unless it is published on crates.io)
   - `edition = "2021"`
   - `license = "MIT OR Apache-2.0"`
+  - All dependencies should be `default-features = false` and should explicitly enable the features that are required.
 - The `src/lib.rs` should have:
   - `#![cfg_attr(not(test), no_std)]`
   - `#![feature(strict_provenance)]` or `#![cfg_attr(feature = "nightly", feature(strict_provenance))]`
