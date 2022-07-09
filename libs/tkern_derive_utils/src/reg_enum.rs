@@ -8,6 +8,50 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream, (String, Span)> {
         _ => return Err((("Enums not supported").into(), input.ident.span())),
     };
 
+    let SplitFieldResult {
+        mut quote_fields,
+        mut to_u64_fields,
+        unknown_ty,
+    } = split_fields(fields)?;
+    let unknown_ty = match unknown_ty {
+        Some(ty) => ty,
+        None => {
+            return Err((
+                "Missing variant `Unknown(u8)` (or a similar value)".into(),
+                input.ident.span(),
+            ))
+        }
+    };
+    quote_fields.push(quote! {
+        x => Self::Unknown(x as #unknown_ty)
+    });
+    to_u64_fields.push(quote! {
+        Self::Unknown(v) => v as u64
+    });
+    let name = input.ident;
+    Ok(quote! {
+        impl #name {
+            pub fn new(val: u64) -> Self {
+                match val {
+                    #( #quote_fields )*
+                }
+            }
+            pub fn to_u64(self) -> u64 {
+                match self {
+                    #( #to_u64_fields )*
+                }
+            }
+        }
+    })
+}
+
+struct SplitFieldResult {
+    quote_fields: Vec<TokenStream>,
+    to_u64_fields: Vec<TokenStream>,
+    unknown_ty: Option<Type>,
+}
+
+fn split_fields(fields: syn::DataEnum) -> Result<SplitFieldResult, (String, Span)> {
     let mut quote_fields = Vec::new();
     let mut to_u64_fields = Vec::new();
     let mut unknown_ty: Option<Type> = None;
@@ -22,7 +66,7 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream, (String, Span)> {
                     return Err((
                         "Expected an unnamed field (e.g. `Unknown(u8)`)".into(),
                         field.ident.span(),
-                    ))
+                    ));
                 }
             };
             unknown_ty = Some(field.ty);
@@ -79,34 +123,9 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream, (String, Span)> {
             Self::#ident => #idx,
         });
     }
-    let unknown_ty = match unknown_ty {
-        Some(ty) => ty,
-        None => {
-            return Err((
-                "Missing variant `Unknown(u8)` (or a similar value)".into(),
-                input.ident.span(),
-            ))
-        }
-    };
-    quote_fields.push(quote! {
-        x => Self::Unknown(x as #unknown_ty)
-    });
-    to_u64_fields.push(quote! {
-        Self::Unknown(v) => v as u64
-    });
-    let name = input.ident;
-    Ok(quote! {
-        impl #name {
-            pub fn new(val: u64) -> Self {
-                match val {
-                    #( #quote_fields )*
-                }
-            }
-            pub fn to_u64(self) -> u64 {
-                match self {
-                    #( #to_u64_fields )*
-                }
-            }
-        }
+    Ok(SplitFieldResult {
+        quote_fields,
+        to_u64_fields,
+        unknown_ty,
     })
 }

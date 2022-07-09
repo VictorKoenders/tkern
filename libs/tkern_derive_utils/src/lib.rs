@@ -1,3 +1,6 @@
+#![feature(strict_provenance)]
+#![warn(unsafe_op_in_unsafe_fn, clippy::pedantic, rust_2018_idioms)]
+
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
