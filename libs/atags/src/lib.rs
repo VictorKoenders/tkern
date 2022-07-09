@@ -1,7 +1,12 @@
 #![doc = include_str!("../README.md")]
 #![no_std]
 #![cfg_attr(feature = "nightly", feature(strict_provenance))]
-#![warn(clippy::pedantic, missing_docs)]
+#![warn(
+    unsafe_op_in_unsafe_fn,
+    clippy::pedantic,
+    rust_2018_idioms,
+    missing_docs
+)]
 
 use core::{marker::PhantomData, ptr::NonNull};
 use custom_debug_derive::Debug;

@@ -1,6 +1,6 @@
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 #![feature(strict_provenance)]
-#![warn(clippy::pedantic, unsafe_op_in_unsafe_fn)]
+#![warn(unsafe_op_in_unsafe_fn, clippy::pedantic, rust_2018_idioms)]
 
 mod framebuffer;
 mod mailbox;
