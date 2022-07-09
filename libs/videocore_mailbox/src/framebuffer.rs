@@ -107,8 +107,10 @@ impl FrameBuffer {
 
     fn color_to_slice(&self, color: Color) -> ([u8; 4], usize) {
         match (self.depth, self.pixel_order) {
-            (24, PixelOrder::RGB) => ([color.r, color.g, color.b, 0], 4),
-            (24, PixelOrder::BGR) => ([color.b, color.g, color.r, 0], 4),
+            (24, PixelOrder::RGB) => ([color.r, color.g, color.b, 0], 3),
+            (24, PixelOrder::BGR) => ([color.b, color.g, color.r, 0], 3),
+            (32, PixelOrder::RGB) => ([color.r, color.g, color.b, 255], 4),
+            (32, PixelOrder::BGR) => ([color.b, color.g, color.r, 255], 4),
             _ => {
                 #[cold]
                 fn do_panic(depth: u32, pixel_order: PixelOrder) -> ! {

@@ -45,7 +45,6 @@ impl<'a> VideoCore<'a> {
     pub fn allocate_framebuffer(&mut self, width: u32, height: u32, depth: u32) -> FrameBuffer {
         let response = mailbox::Request::new()
             .set(items::FramebufferScreenSize { width, height })
-            .set(items::FramebufferVirtualScreenSize { width, height })
             .set(items::FramebufferDepth { depth })
             .set(items::FramebufferPixelOrder {
                 order: PixelOrder::RGB,
@@ -54,7 +53,6 @@ impl<'a> VideoCore<'a> {
             .send(self.peripherals, Channel::PropertyToVC);
 
         let (screen_size, response) = response.pop();
-        let (_virtual_screen_size, response) = response.pop();
         let (depth, response) = response.pop();
         let (pixel_order, response) = response.pop();
         let allocation = response.pop();
