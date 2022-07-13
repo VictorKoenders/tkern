@@ -16,12 +16,6 @@ And rust-src:
 rustup component add rust-src
 ```
 
-Then building this kernel should be as simple as running 
-
-```sh
-cargo make
-```
-
 Also make sure to install `aarch64-elf-gcc`:
 - macos: `brew install aarch64-elf-gcc`
 - ubuntu: `apt install gcc-aarch64-linux-gnu`
@@ -29,6 +23,12 @@ Also make sure to install `aarch64-elf-gcc`:
 The following binaries should be available in your path:
 - `cargo make --version` (tested with 0.35.12)
 - `aarch64-elf-as --version` (tested with 2.38)
+
+Then building this kernel should be as simple as running 
+
+```sh
+cargo make
+```
 
 # Commands
 

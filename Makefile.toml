@@ -14,23 +14,16 @@ ADDITIONAL_CARGO_ARGS = "--release"
 [tasks.default]
 alias = "build"
 
-# Borked
-# [tasks.objdump]
-# install_crate = "cargo-binutils"
-# command = "cargo"
-# args = ["objdump", "--target", "${ARCH}.json", "-Zbuild-std=core,alloc", "--", "-D"]
-# dependencies = [
-#     "get_env"
-# ]
-
 [tasks.doc]
-script = "cargo doc --target ${ARCH}.json --open -Zbuild-std=core,alloc"
+command = "cargo"
+args = ["doc", "--target", "${ARCH}.json", "-Zbuild-std=core,alloc", "@@split(CARGO_MAKE_TASK_ARGS,;)"]
 
 [tasks.docs]
 alias = "doc"
 
 [tasks.build]
-script = "rust-objcopy --strip-all -O binary ${OUT_DIR}/tkern ${OUT_DIR}/tkern.img"
+command = "rust-objcopy"
+args = ["--strip-all", "-O", "binary", "${OUT_DIR}/tkern", "${OUT_DIR}/tkern.img"]
 dependencies = [
     "build_cargo",
     "get_env"
@@ -52,7 +45,7 @@ env = { RUSTFLAGS = "-Cinstrument-coverage", LLVM_PROFILE_FILE = "${CARGO_MAKE_W
 [tasks.run]
 private = false
 extend = "subcommand"
-env = { "SUBCOMMAND_PREFIX" = "run" }
+env = { SUBCOMMAND_PREFIX = "run" }
 
 [tasks.subcommand]
 private = true
@@ -83,7 +76,7 @@ script = '''
 board = get_env TKERN_TARGET_BOARD
 rustflags = get_env RUSTFLAGS
 if eq ${board} "raspi3b"
-    # rustflags = concat ${rustflags} "-C target-cpu=cortex-a53"
+    rustflags = concat ${rustflags} "-C target-cpu=cortex-a53"
 elseif eq ${board} "raspi4"
     rustflags = concat ${rustflags} "-C target-cpu=cortex-a72"
 else
