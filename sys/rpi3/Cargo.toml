@@ -1,0 +1,8 @@
+[package]
+name = "tkern_sys_rpi"
+version = "0.0.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+sys_derive = { path = "../derive" }

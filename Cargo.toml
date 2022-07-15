@@ -1,5 +1,8 @@
 [workspace]
 members = [
+    "sys/derive",
+    "sys/rpi3",
+
     "libs/allocator",
     "libs/atags",
     "libs/drivers",
