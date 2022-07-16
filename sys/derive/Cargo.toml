@@ -8,11 +8,10 @@ license = "MIT OR Apache-2.0"
 proc-macro = true
 
 [dependencies]
-proc-macro2 = { version = "1.0.40", default-features = false }
-quote = { version = "1.0.20", default-features = false }
-unicode-ident = "=1.0.1"
+proc-macro2 = { version = "=1.0.38", default-features = false }
+quote = { version = "=1.0.19", default-features = false }
 
 [dependencies.syn]
-version = "1.0.98"
+version = "=1.0.94"
 features = ["extra-traits", "parsing", "proc-macro", "derive", "printing"]
 default-features = false
