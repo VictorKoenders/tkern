@@ -3,7 +3,7 @@ use proc_macro2::{Ident, Literal, TokenStream};
 use quote::quote;
 use std::fmt::Write;
 
-pub fn read_types_and_methods<'a>(fields: &'a [Field]) -> (Vec<TokenStream>, Vec<TokenStream>) {
+pub fn read_types_and_methods(fields: &[Field]) -> (Vec<TokenStream>, Vec<TokenStream>) {
     let mut types = Vec::new();
     let mut methods = Vec::new();
     for field in fields.iter().filter(|f| f.readable) {
@@ -67,8 +67,8 @@ pub fn read_types_and_methods<'a>(fields: &'a [Field]) -> (Vec<TokenStream>, Vec
     (types, methods)
 }
 
-pub fn write_default_types_and_methods<'a>(
-    fields: &'a [Field],
+pub fn write_default_types_and_methods(
+    fields: &[Field],
 ) -> (TokenStream, Vec<TokenStream>, Vec<TokenStream>) {
     let mut default_impl = String::new();
     let mut types = Vec::new();

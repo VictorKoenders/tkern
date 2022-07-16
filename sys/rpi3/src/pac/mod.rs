@@ -43,7 +43,7 @@ pub mod AUX {
         pub Mini_UART_enable: bool,
     }
 
-    /// The AUX_MU_IO_REG register is primary used to write data to and read data from the
+    /// The `AUX_MU_IO_REG` register is primary used to write data to and read data from the
     /// UART FIFOs.
     /// If the DLAB bit in the line control register is set this register gives access to the LS 8 bits
     /// of the baud rate. (Note: there is easier access to the baud rate register)
