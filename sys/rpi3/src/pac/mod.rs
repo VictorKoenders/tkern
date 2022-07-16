@@ -1,5 +1,6 @@
 #![allow(
     clippy::upper_case_acronyms,
+    clippy::struct_excessive_bools,
     dead_code,
     non_snake_case,
     non_camel_case_types
@@ -87,7 +88,86 @@ pub mod AUX {
         /// If this bit is set the interrupt line is asserted whenever the receive FIFO holds at least 1 byte
         /// If this bit is clear no receive interrupts are generated.
         #[field(bit = 1, readable, writable)]
-        pub Enable_receive_interrupts: bool
+        pub Enable_receive_interrupts: bool,
+    }
+
+    /// The `AUX_MU_IIR_REG` register shows the interrupt status.
+    /// It also has two FIFO enable status bits and (when writing) FIFO clear bits.
+    #[derive(sys_derive::Peripheral)]
+    #[peripheral(address = 0x21_5048)]
+    pub struct MU_IIR_REG {
+        /// On read this register shows the interrupt ID bit
+        /// - `0b00`: No interrupts
+        /// - `0b01`: Transmit holding register empty
+        /// - `0b10`: Receiveer holds valid byte
+        /// - `0b11`: <Not possible>
+        ///
+        /// On write:
+        /// - Writing with `0b01` will clear the receive FIFO
+        /// - Writing with `0b10` will clear the transmit FIFO
+        #[field(bits = 2:1, readable, writable)]
+        pub interrupt_id: u8,
+
+        /// This bit is clear whenever an interrupt is pending
+        #[field(bit = 0, readable, writable, reset = 1)]
+        pub interrupt_pending: bool,
+    }
+
+    /// The `AUX_MU_LCR_REG` register controls the line data format and gives access to the baudrate register
+    #[derive(sys_derive::Peripheral)]
+    #[peripheral(address = 0x21_504C)]
+    pub struct MU_LCR_REG {
+        /// If set the first to Mini UART register give access the the Baudrate register.
+        /// During operation this bit must be cleared
+        #[field(bit = 7, readable, writable)]
+        pub DLAB_access: bool,
+
+        /// If set high the UART1_TX line is pulled low continuously.
+        /// If held for at least 12 bits times that will indicate a break condition.
+        #[field(bit = 6, readable, writable)]
+        pub _Break: bool,
+
+        /// - `0b00` : the UART works in 7-bit mode
+        /// - `0b11` : the UART works in 8-bit mod
+        #[field(bits = 1:0, readable, writable)]
+        pub data_size: u8,
+    }
+
+    /// The `AUX_MU_MCR_REG` register controls the 'modem' signals.
+    #[derive(sys_derive::Peripheral)]
+    #[peripheral(address = 0x21_5050)]
+    pub struct MU_MCR_REG {
+        /// If clear the UART1_RTS line is high
+        /// If set the UART1_RTS line is low
+        /// This bit is ignored if the RTS is used for auto-flow control. See the Mini Uart Extra Control register description)
+        #[field(bit = 1, readable, writable)]
+        pub RTS: bool,
+    }
+
+    /// The `AUX_MU_LSR_REG` register shows the data status
+    #[derive(sys_derive::Peripheral)]
+    #[peripheral(address = 0x21_5054)]
+    pub struct MU_LSR_REG {
+        /// This bit is set if the transmit FIFO is empty and the
+        /// transmitter is idle. (Finished shifting out the last bit).
+        #[field(bit = 6, readable, reset = 1)]
+        pub Transmitter_idle: bool,
+
+        /// This bit is set if the transmit FIFO can accept at least one byte.
+        #[field(bit = 5, readable)]
+        pub Transmitter_empty: bool,
+
+        /// This bit is set if there was a receiver overrun.
+        /// That is: one or more characters arrived whilst the receive FIFO was full.
+        /// The newly arrived charters have been discarded.
+        /// This bit is cleared each time this register is read.
+        /// To do a non-destructive read of this overrun bit use the Mini Uart Extra Status register
+        #[field(bit = 1, readable)]
+        pub Receiver_Overrun: bool,
+
+        /// This bit is set if the receive FIFO holds at least 1 symbol.
+        #[field(bit = 0, readable)]
+        pub Data_ready: bool,
     }
 }
 

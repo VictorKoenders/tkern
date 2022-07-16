@@ -68,29 +68,34 @@ pub fn read_types_and_methods(fields: &[Field]) -> (Vec<TokenStream>, Vec<TokenS
 }
 
 pub fn write_default_types_and_methods(
+    inner_ty: &TokenStream,
     fields: &[Field],
 ) -> (TokenStream, Vec<TokenStream>, Vec<TokenStream>) {
-    let mut default_impl = String::new();
+    let (types, methods) = generate_write_types_amethods(fields);
+    let mut default_impl: TokenStream = generate_default_impl(fields).parse().unwrap();
+
+    default_impl = quote! {
+        impl Default for W {
+            fn default() -> Self {
+                let mut val: #inner_ty = Default::default();
+                #default_impl
+                Self(val)
+            }
+        }
+    };
+    (default_impl, types, methods)
+}
+
+fn generate_write_types_amethods(fields: &[Field]) -> (Vec<TokenStream>, Vec<TokenStream>) {
     let mut types = Vec::new();
     let mut methods = Vec::new();
-    let mut default_impl_has_unsafe = false;
-
     for field in fields.iter().filter(|f| f.writable) {
         let name = &field.name;
-        let name_to_lower = Ident::new(&name.to_string().to_lowercase(), name.span());
 
         let fields = match &field.ty_info {
-            FieldTy::Bool { bit, reset } => {
+            FieldTy::Bool { bit, reset: _ } => {
                 let index = bit / 32;
                 let offset = bit % 32;
-                if let Some(reset) = reset {
-                    let _ = write!(
-                        &mut default_impl,
-                        ".{}().{}()",
-                        name_to_lower,
-                        if *reset { "set" } else { "clear" }
-                    );
-                }
                 quote! {
                     pub const fn set(self) -> W {
                         let mut bytes = (self.0).0;
@@ -113,15 +118,7 @@ pub fn write_default_types_and_methods(
                     }
                 }
             }
-            FieldTy::U8 { range, reset } => {
-                if let Some(reset) = reset {
-                    let _ = write!(
-                        &mut default_impl,
-                        ".{}().set_value({})",
-                        name_to_lower, reset
-                    );
-                    default_impl_has_unsafe = true;
-                }
+            FieldTy::U8 { range, reset: _ } => {
                 let index = range.start / 32;
                 let offset = range.start % 32;
                 let length = range.end - range.start;
@@ -158,17 +155,42 @@ pub fn write_default_types_and_methods(
             }
         });
     }
-    let mut default_impl: TokenStream = default_impl.parse().unwrap();
-    default_impl = quote! { Self(Default::default()) #default_impl };
-    if default_impl_has_unsafe {
-        default_impl = quote! { unsafe { #default_impl } };
-    }
-    default_impl = quote! {
-        impl Default for W {
-            fn default() -> Self {
-                #default_impl
+    (types, methods)
+}
+
+fn generate_default_impl(fields: &[Field]) -> String {
+    let mut result = String::new();
+    for field in fields {
+        let name = &field.name;
+
+        match &field.ty_info {
+            FieldTy::Bool { bit, reset } => {
+                if let Some(true) = reset {
+                    let index = bit / 32;
+                    let offset = bit % 32;
+                    let mask = 1 << offset;
+                    let _ = writeln!(
+                        &mut result,
+                        "val[{}] |= 0b{:032b}; // {} = {}",
+                        index, mask, name, offset,
+                    );
+                }
             }
-        }
-    };
-    (default_impl, types, methods)
+            FieldTy::U8 { range, reset } => {
+                if let Some(reset) = reset {
+                    let index = range.start / 32;
+                    let offset = range.start % 32;
+                    let _ = write!(
+                        &mut result,
+                        "val[{}] |= 0b{:032b}; // {} = {}",
+                        index,
+                        reset << offset,
+                        name,
+                        reset
+                    );
+                }
+            }
+        };
+    }
+    result
 }

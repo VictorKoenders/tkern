@@ -9,12 +9,11 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream, (String, Span)> {
     let parse::StructAttributes { offset, inner } = parse::get_struct_attributes(&input)?;
     let fields = parse::get_struct_fields(&input)?;
     let ident = &input.ident;
+    let inner: TokenStream = inner.parse().unwrap();
     let module_name = Ident::new(&ident.to_string().to_lowercase(), ident.span());
     let (read_types, r_methods) = generate::read_types_and_methods(&fields);
     let (write_default, write_types, w_methods) =
-        generate::write_default_types_and_methods(&fields);
-
-    let inner: TokenStream = inner.parse().unwrap();
+        generate::write_default_types_and_methods(&inner, &fields);
 
     Ok(quote! {
         pub mod #module_name {
@@ -41,7 +40,7 @@ pub fn derive(input: DeriveInput) -> Result<TokenStream, (String, Span)> {
 
             unsafe fn read(base_address: core::ptr::NonNull<()>) -> Self::R {
                 use core::num::NonZeroUsize;
-                let bytes = unsafe { core::ptr::read_volatile(
+                let bytes: #inner = unsafe { core::ptr::read_volatile(
                     base_address.map_addr(|addr| {
                         NonZeroUsize::new(addr.get() + #offset).unwrap()
                     }).cast().as_ptr()
