@@ -1,4 +1,9 @@
-#![allow(clippy::upper_case_acronyms, dead_code, non_snake_case)]
+#![allow(
+    clippy::upper_case_acronyms,
+    dead_code,
+    non_snake_case,
+    non_camel_case_types
+)]
 
 use core::ptr::NonNull;
 
@@ -32,9 +37,31 @@ pub mod AUX {
         /// If set the SPI 1 module is enabled.  If clear the SPI 1 module is disabled. That also disables any SPI 1 module register access
         #[field(bit = 1, readable, writable, reset = 0)]
         pub SPI1_enable: bool,
-        /// If set the mini UART is enabled. The UART will immediately start receiving data, especially if the UART1_RX line is low.  If clear the mini UART is disabled. That also disables any mini UART register acces
+        /// If set the mini UART is enabled. The UART will immediately start receiving data, especially if the UART1_RX line is low.
+        /// If clear the mini UART is disabled. That also disables any mini UART register acces
         #[field(bit = 0, readable, writable, reset = 0)]
         pub Mini_UART_enable: bool,
+    }
+
+    /// The AUX_MU_IO_REG register is primary used to write data to and read data from the
+    /// UART FIFOs.
+    /// If the DLAB bit in the line control register is set this register gives access to the LS 8 bits
+    /// of the baud rate. (Note: there is easier access to the baud rate register)
+    #[derive(sys_derive::Peripheral)]
+    #[peripheral(address = 0x21_5040)]
+    pub struct MU_IO_REG {
+        /// Access to the LS 8 bits of the 16-bit baudrate register.
+        /// (Only If bit 7 of the line control register (DLAB bit) is set)
+        #[field(bits = 7:0, readable, writable, reset = 0)]
+        pub LS_8_bit_baudrate: u8,
+        /// Data written is put in the transmit FIFO (Provided it is not full)
+        // (Only If bit 7 of the line control register (DLAB bit) is clear)
+        #[field(bits = 7:0, writable, reset = 0)]
+        pub transmit_data_write: u8,
+        /// Data read is taken from the receive FIFO (Provided it is not empty)
+        /// (Only If bit 7 of the line control register (DLAB bit) is clear)
+        #[field(bits = 7:0, readable, reset = 0)]
+        pub receive_data_read: u8,
     }
 }
 
@@ -47,6 +74,8 @@ pub trait Peripheral {
     /// # Safety
     ///
     /// The base address must be a valid address. For RPI2 this will be `0x2000_0000`, for RPI3 and newer this will be `0x3F00_000`
+    ///
+    /// [`R`]: #associatedtype.R
     unsafe fn read(base_address: NonNull<()>) -> Self::R;
 
     /// Write the value [`W`] to the register.
@@ -54,6 +83,8 @@ pub trait Peripheral {
     /// # Safety
     ///
     /// The base address must be a valid address. For RPI2 this will be `0x2000_0000`, for RPI3 and newer this will be `0x3F00_000`
+    ///
+    /// [`W`]: #associatedtype.W
     unsafe fn write(base_address: NonNull<()>, write: Self::W);
 
     /// Modify the value of the register
