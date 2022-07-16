@@ -186,9 +186,18 @@ pub fn get_struct_fields(input: &DeriveInput) -> Result<Vec<Field>, (String, Spa
             "u8" => {
                 let reset =
                     if let Some(reset) = reset {
-                        Some(reset.to_string().parse().map_err(|_| {
+                        let str = reset.to_string();
+                        let reset = if let Some(base_2) = str.strip_prefix("0b") {
+                            u8::from_str_radix(base_2, 2)
+                        } else if let Some(base_16) = str.strip_prefix("0x") {
+                            u8::from_str_radix(base_16, 16)
+                        } else {
+                            str.parse()
+                        }.map_err(|_| { 
                             ("Invalid reset value for u8".to_string(), reset.span())
-                        })?)
+                        })?;
+
+                        Some(reset)
                     } else {
                         None
                     };
