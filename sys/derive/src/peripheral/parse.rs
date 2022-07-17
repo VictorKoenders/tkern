@@ -106,6 +106,8 @@ pub fn get_struct_fields(input: &DeriveInput) -> Result<Vec<Field>, (String, Spa
         let mut reset = None;
         let mut bit = None;
         let mut bits = None;
+        let mut unsafe_enum = None;
+        let mut try_enum = None;
 
         let mut tokens = group.stream().into_iter();
         while let Some(token) = tokens.next() {
@@ -117,6 +119,20 @@ pub fn get_struct_fields(input: &DeriveInput) -> Result<Vec<Field>, (String, Spa
                     readable = true;
                     writable = true;
                 }
+                TokenTree::Ident(i) if i == "try_enum" => match tokens.next() {
+                    Some(TokenTree::Group(group)) => match group.stream().into_iter().next() {
+                        Some(TokenTree::Ident(i)) => try_enum = Some(i),
+                        _ => return Err(("Expected `try_enum(u8)`".to_string(), group.span())),
+                    },
+                    _ => return Err(("Expected `try_enum(u8)`".to_string(), i.span())),
+                },
+                TokenTree::Ident(i) if i == "unsafe_enum" => match tokens.next() {
+                    Some(TokenTree::Group(group)) => match group.stream().into_iter().next() {
+                        Some(TokenTree::Ident(i)) => unsafe_enum = Some(i),
+                        _ => return Err(("Expected `enum(u8)`".to_string(), group.span())),
+                    },
+                    _ => return Err(("Expected `enum(u8)`".to_string(), i.span())),
+                },
                 TokenTree::Ident(i) if i == "reset" => {
                     match tokens.next() {
                         Some(TokenTree::Punct(p)) if p.as_char() == '=' => {}
@@ -203,41 +219,7 @@ pub fn get_struct_fields(input: &DeriveInput) -> Result<Vec<Field>, (String, Spa
                 } else {
                     None
                 };
-                let range = if let Some(bits) = bits {
-                    match bits.as_slice() {
-                        [TokenTree::Literal(high), TokenTree::Punct(colon), TokenTree::Literal(low)]
-                            if colon.as_char() == ':' =>
-                        {
-                            let high_span = high.span();
-                            let high = high
-                                .to_string()
-                                .parse()
-                                .map_err(|_| ("Invalid value".to_string(), high.span()))?;
-                            let low = low
-                                .to_string()
-                                .parse()
-                                .map_err(|_| ("Invalid value".to_string(), low.span()))?;
-                            if low > high || low + 8 <= high {
-                                return Err(("bit range too big for u8".to_string(), high_span));
-                            }
-                            if low / 32 != high / 32 {
-                                return Err(("bit range overlaps u32 boundary, this is currently not supported".to_string(), high_span));
-                            }
-                            low..high
-                        }
-                        [token, ..] => {
-                            return Err((
-                                "Invalid value, should be `high:low`".to_string(),
-                                token.span(),
-                            ));
-                        }
-                        _ => {
-                            return Err(("Missing `bits = high:low`".to_string(), name.span()));
-                        }
-                    }
-                } else {
-                    return Err(("Missing `bits = high:low` field".to_string(), name.span()));
-                };
+                let range = parse_range::<u8>(bits, &name)?;
                 FieldTy::U8 { range, reset }
             }
             "u16" => {
@@ -256,48 +238,46 @@ pub fn get_struct_fields(input: &DeriveInput) -> Result<Vec<Field>, (String, Spa
                 } else {
                     None
                 };
-                let range = if let Some(bits) = bits {
-                    match bits.as_slice() {
-                        [TokenTree::Literal(high), TokenTree::Punct(colon), TokenTree::Literal(low)]
-                            if colon.as_char() == ':' =>
-                        {
-                            let high_span = high.span();
-                            let high = high
-                                .to_string()
-                                .parse()
-                                .map_err(|_| ("Invalid value".to_string(), high.span()))?;
-                            let low = low
-                                .to_string()
-                                .parse()
-                                .map_err(|_| ("Invalid value".to_string(), low.span()))?;
-                            if low > high || low + 16 <= high {
-                                return Err(("bit range too big for u16".to_string(), high_span));
-                            }
-                            if low / 32 != high / 32 {
-                                return Err(("bit range overlaps u32 boundary, this is currently not supported".to_string(), high_span));
-                            }
-                            low..high
-                        }
-                        [token, ..] => {
-                            return Err((
-                                "Invalid value, should be `high:low`".to_string(),
-                                token.span(),
-                            ));
-                        }
-                        _ => {
-                            return Err(("Missing `bits = high:low`".to_string(), name.span()));
-                        }
-                    }
-                } else {
-                    return Err(("Missing `bits = high:low` field".to_string(), name.span()));
-                };
+                let range = parse_range::<u16>(bits, &name)?;
                 FieldTy::U16 { range, reset }
             }
             _ => {
-                return Err((
-                    format!("Unknown type {:?}, only `bool` is supported", field.ty),
-                    name.span(),
-                ))
+                if let Some(primitive_ty) = unsafe_enum {
+                    let range = match primitive_ty.to_string().as_str() {
+                        "u8" => parse_range::<u8>(bits, &name)?,
+                        "u16" => parse_range::<u16>(bits, &name)?,
+                        _ => {
+                            return Err((
+                                "Only u8/u16 enums are supported at the moment".to_string(),
+                                primitive_ty.span(),
+                            ))
+                        }
+                    };
+                    FieldTy::UnsafeEnum {
+                        range,
+                        primitive_ty,
+                    }
+                } else if let Some(primitive_ty) = try_enum {
+                    let range = match primitive_ty.to_string().as_str() {
+                        "u8" => parse_range::<u8>(bits, &name)?,
+                        "u16" => parse_range::<u16>(bits, &name)?,
+                        _ => {
+                            return Err((
+                                "Only u8/u16 enums are supported at the moment".to_string(),
+                                primitive_ty.span(),
+                            ))
+                        }
+                    };
+                    FieldTy::TryEnum {
+                        range,
+                        primitive_ty,
+                    }
+                } else {
+                    return Err((
+                        format!("Unknown type {:?}, only `bool` is supported", field.ty),
+                        name.span(),
+                    ));
+                }
             }
         };
 
@@ -311,6 +291,60 @@ pub fn get_struct_fields(input: &DeriveInput) -> Result<Vec<Field>, (String, Spa
         });
     }
     Ok(result)
+}
+
+fn parse_range<T>(
+    bits: Option<Vec<TokenTree>>,
+    name: &Ident,
+) -> Result<Range<usize>, (String, Span)> {
+    parse_range_ty(
+        bits,
+        name,
+        std::mem::size_of::<T>() * 8,
+        std::any::type_name::<T>(),
+    )
+}
+fn parse_range_ty(
+    bits: Option<Vec<TokenTree>>,
+    name: &Ident,
+    max_size: usize,
+    ty_name: &str,
+) -> Result<Range<usize>, (String, Span)> {
+    if let Some(bits) = bits {
+        match bits.as_slice() {
+            [TokenTree::Literal(high), TokenTree::Punct(colon), TokenTree::Literal(low)]
+                if colon.as_char() == ':' =>
+            {
+                let high_span = high.span();
+                let high = high
+                    .to_string()
+                    .parse()
+                    .map_err(|_| ("Invalid value".to_string(), high.span()))?;
+                let low = low
+                    .to_string()
+                    .parse()
+                    .map_err(|_| ("Invalid value".to_string(), low.span()))?;
+                if low > high || low + max_size <= high {
+                    return Err((format!("bit range too big for {}", ty_name), high_span));
+                }
+                if low / 32 != high / 32 {
+                    return Err((
+                        "bit range overlaps u32 boundary, this is currently not supported"
+                            .to_string(),
+                        high_span,
+                    ));
+                }
+                Ok(low..high)
+            }
+            [token, ..] => Err((
+                "Invalid value, should be `high:low`".to_string(),
+                token.span(),
+            )),
+            _ => Err(("Missing `bits = high:low`".to_string(), name.span())),
+        }
+    } else {
+        Err(("Missing `bits = high:low` field".to_string(), name.span()))
+    }
 }
 
 pub struct Field<'a> {
@@ -335,5 +369,13 @@ pub enum FieldTy {
     U16 {
         range: Range<usize>,
         reset: Option<u16>,
+    },
+    TryEnum {
+        range: Range<usize>,
+        primitive_ty: Ident,
+    },
+    UnsafeEnum {
+        range: Range<usize>,
+        primitive_ty: Ident,
     },
 }

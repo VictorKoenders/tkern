@@ -17,8 +17,11 @@ fn delay(count: usize) {
 
 impl MiniUart {
     pub fn init(aux: &mut pac::AUX::Peripheral, gpio: &mut pac::GPIO::Peripheral) -> Self {
+        use pac::AUX::{BaudRate, UartDataSize};
+        use pac::GPIO::FSEL;
+
         gpio.GPFSEL1
-            .modify(|_r, w| unsafe { w.fsel14().set_value(2).fsel15().set_value(2) });
+            .write(|w| w.fsel14().set(FSEL::Alt5).fsel15().set(FSEL::Alt5));
 
         gpio.GPPUD.clear();
         delay(150);
@@ -31,10 +34,10 @@ impl MiniUart {
         aux.MU_CNTL_REG.clear();
         aux.MU_IER_REG.clear();
         aux.MU_LCR_REG
-            .write(|w| unsafe { w.data_size().set_value(0b11) });
+            .write(|w| w.data_size().set(UartDataSize::_8Bit));
         aux.MU_MCR_REG.clear();
         aux.MU_BAUD_REG
-            .write(|w| unsafe { w.baudrate().set_value(270) });
+            .write(|w| w.baudrate().set(BaudRate::_115200));
         aux.MU_CNTL_REG
             .write(|w| w.transmitter_enable().set().receiver_enable().set());
 

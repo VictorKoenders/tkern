@@ -134,8 +134,15 @@ pub mod AUX {
 
         /// - `0b00` : the UART works in 7-bit mode
         /// - `0b11` : the UART works in 8-bit mod
-        #[field(bits = 1:0, readable, writable)]
-        pub data_size: u8,
+        #[field(bits = 1:0, readable, writable, unsafe_enum(u8))]
+        pub data_size: UartDataSize,
+    }
+
+    #[derive(num_enum::UnsafeFromPrimitive, num_enum::IntoPrimitive)]
+    #[repr(u8)]
+    pub enum UartDataSize {
+        _7Bit = 0b00,
+        _8Bit = 0b11,
     }
 
     /// The `AUX_MU_MCR_REG` register controls the 'modem' signals.
@@ -246,8 +253,26 @@ pub mod AUX {
     #[peripheral(address = 0x21_5068)]
     pub struct MU_BAUD_REG {
         /// mini UART baudrate counter
-        #[field(bits = 15:0, rw)]
-        pub Baudrate: u16,
+        #[field(bits = 15:0, rw, try_enum(u16))]
+        pub Baudrate: BaudRate,
+    }
+
+    // The mini UART uses 8-times oversampling. The Baudrate can be calculated from:
+    // baudrate = (system_clock_freq) / (8 * (baudrate_reg + 1))
+    // If the system clock is 250 MHz and the baud register is zero the baudrate is 31.25 Mega
+    // baud. (25 Mbits/sec or 3.125 Mbytes/sec). The lowest baudrate with a 250 MHz system
+    // clock is 476 Baud
+
+    // To calculate the enum values: (250000000 / <baud rate>) / 8 - 1
+
+    #[derive(num_enum::TryFromPrimitive, num_enum::IntoPrimitive)]
+    #[repr(u16)]
+    pub enum BaudRate {
+        _9600 = 3254,
+        _19200 = 1627,
+        _38400 = 813,
+        _57600 = 542,
+        _115200 = 270,
     }
 
     pub struct Peripheral {
@@ -339,26 +364,39 @@ pub mod GPIO {
         /// - 111 = GPIO Pin 19 takes alternate function 3
         /// - 011 = GPIO Pin 19 takes alternate function 4
         /// - 010 = GPIO Pin 19 takes alternate function 5
-        #[field(bits = 29:27, rw)]
-        pub FSEL19: u8,
-        #[field(bits = 26:24, rw)]
-        pub FSEL18: u8,
-        #[field(bits = 23:21, rw)]
-        pub FSEL17: u8,
-        #[field(bits = 20:18, rw)]
-        pub FSEL16: u8,
-        #[field(bits = 17:15, rw)]
-        pub FSEL15: u8,
-        #[field(bits = 14:12, rw)]
-        pub FSEL14: u8,
-        #[field(bits = 11:9, rw)]
-        pub FSEL13: u8,
-        #[field(bits = 8:6, rw)]
-        pub FSEL12: u8,
-        #[field(bits = 5:3, rw)]
-        pub FSEL11: u8,
-        #[field(bits = 2:0, rw)]
-        pub FSEL10: u8,
+        #[field(bits = 29:27, rw, unsafe_enum(u8))]
+        pub FSEL19: FSEL,
+        #[field(bits = 26:24, rw, unsafe_enum(u8))]
+        pub FSEL18: FSEL,
+        #[field(bits = 23:21, rw, unsafe_enum(u8))]
+        pub FSEL17: FSEL,
+        #[field(bits = 20:18, rw, unsafe_enum(u8))]
+        pub FSEL16: FSEL,
+        #[field(bits = 17:15, rw, unsafe_enum(u8))]
+        pub FSEL15: FSEL,
+        #[field(bits = 14:12, rw, unsafe_enum(u8))]
+        pub FSEL14: FSEL,
+        #[field(bits = 11:9, rw, unsafe_enum(u8))]
+        pub FSEL13: FSEL,
+        #[field(bits = 8:6, rw, unsafe_enum(u8))]
+        pub FSEL12: FSEL,
+        #[field(bits = 5:3, rw, unsafe_enum(u8))]
+        pub FSEL11: FSEL,
+        #[field(bits = 2:0, rw, unsafe_enum(u8))]
+        pub FSEL10: FSEL,
+    }
+
+    #[derive(num_enum::UnsafeFromPrimitive, num_enum::IntoPrimitive)]
+    #[repr(u8)]
+    pub enum FSEL {
+        Input = 0b000,
+        Output = 0b001,
+        Alt0 = 0b100,
+        Alt1 = 0b101,
+        Alt2 = 0b110,
+        Alt3 = 0b111,
+        Alt4 = 0b011,
+        Alt5 = 0b010,
     }
 
     /// The GPIO Pull-up/down Register controls the actuation of the internal pull-up/down

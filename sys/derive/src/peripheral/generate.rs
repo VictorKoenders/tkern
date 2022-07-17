@@ -63,6 +63,57 @@ pub fn read_types_and_methods(fields: &[Field]) -> (Vec<TokenStream>, Vec<TokenS
                     }
                 }
             }
+            FieldTy::UnsafeEnum {
+                range,
+                primitive_ty,
+            } => {
+                let index = range.start / 32;
+                let offset = range.start % 32;
+                let length = range.end - range.start;
+                let mask = format!("0b{:016b}", ((1 << (length + 1)) - 1))
+                    .parse::<Literal>()
+                    .unwrap();
+                let ty = &field.ty;
+                quote! {
+                    pub fn get(self) -> super::#ty {
+                        let mut bytes = (self.0).0;
+                        let idx: usize = (bytes.len() - 1 - #index);
+                        let offset: usize = #offset;
+                        let mask: #primitive_ty = #mask;
+
+                        let value: #primitive_ty = ((bytes[idx] >> offset) as #primitive_ty) & mask;
+
+                        unsafe { super::#ty::from_unchecked(value) }
+                    }
+                }
+            }
+            FieldTy::TryEnum {
+                range,
+                primitive_ty,
+            } => {
+                let index = range.start / 32;
+                let offset = range.start % 32;
+                let length = range.end - range.start;
+                let mask = format!("0b{:016b}", ((1 << (length + 1)) - 1))
+                    .parse::<Literal>()
+                    .unwrap();
+                let ty = &field.ty;
+                quote! {
+                    #[doc = concat!("Get the value of this register. If the hardware value is not a valid [`",stringify!(#ty),"`], the read value is returned as an error.")]
+                    #[doc = ""]
+                    #[doc = concat!("[`", stringify!(#ty), "`]: ../enum.", stringify!(#ty), ".html")]
+                    pub fn get(self) -> Result<super::#ty, #primitive_ty> {
+                        let mut bytes = (self.0).0;
+                        let idx: usize = (bytes.len() - 1 - #index);
+                        let offset: usize = #offset;
+                        let mask: #primitive_ty = #mask;
+
+                        let value: #primitive_ty = ((bytes[idx] >> offset) as #primitive_ty) & mask;
+
+                        num_enum::TryFromPrimitive::try_from_primitive(value).map_err(|_| value)
+                    }
+                }
+            }
         };
 
         let type_name = Ident::new(&format!("{}_R", name), name.span());
@@ -174,6 +225,36 @@ fn generate_write_types_amethods(fields: &[Field]) -> (Vec<TokenStream>, Vec<Tok
                     }
                 }
             }
+            FieldTy::UnsafeEnum {
+                range,
+                primitive_ty,
+            }
+            | FieldTy::TryEnum {
+                range,
+                primitive_ty,
+            } => {
+                let index = range.start / 32;
+                let offset = range.start % 32;
+                let length = range.end - range.start;
+                let mask = format!("0b{:08b}", ((1 << (length + 1)) - 1))
+                    .parse::<Literal>()
+                    .unwrap();
+                let ty = &field.ty;
+                quote! {
+                    pub fn set(self, value: super::#ty) -> W {
+                        unsafe { self.set_raw(value.into()) }
+                    }
+
+                    pub const unsafe fn set_raw(self, value: #primitive_ty) -> W {
+                        let mut bytes = (self.0).0;
+                        let idx: usize = (bytes.len() - 1 - #index);
+                        let offset: usize = #offset;
+                        let mask: #primitive_ty = #mask;
+                        bytes[idx] |= ((value & mask) as u32) << offset;
+                        W(bytes)
+                    }
+                }
+            }
         };
 
         let type_name = Ident::new(&format!("{}_W", name), name.span());
@@ -241,6 +322,7 @@ fn generate_default_impl(fields: &[Field]) -> String {
                     );
                 }
             }
+            FieldTy::TryEnum { .. } | FieldTy::UnsafeEnum { .. } => {}
         };
     }
     result

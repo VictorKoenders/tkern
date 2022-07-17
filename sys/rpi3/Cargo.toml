@@ -7,3 +7,4 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 sys_derive = { path = "../derive" }
 cortex-a = { version = "7.4.0", default-features = false }
+num_enum = { version = "0.5.7", default-features = false }
