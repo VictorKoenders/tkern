@@ -243,6 +243,7 @@ dependencies = [
 name = "tkern_sys_rpi"
 version = "0.0.0"
 dependencies = [
+ "cortex-a",
  "sys_derive",
 ]
 

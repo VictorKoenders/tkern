@@ -45,6 +45,24 @@ pub fn read_types_and_methods(fields: &[Field]) -> (Vec<TokenStream>, Vec<TokenS
                     }
                 }
             }
+            FieldTy::U16 { range, reset: _ } => {
+                let index = range.start / 32;
+                let offset = range.start % 32;
+                let length = range.end - range.start;
+                let mask = format!("0b{:016b}", ((1 << (length + 1)) - 1))
+                    .parse::<Literal>()
+                    .unwrap();
+                quote! {
+                    pub const fn get_value(self) -> u16 {
+                        let mut bytes = (self.0).0;
+                        let idx: usize = (bytes.len() - 1 - #index);
+                        let offset: usize = #offset;
+                        let mask: u16 = #mask;
+
+                        ((bytes[idx] >> offset) as u16) & mask
+                    }
+                }
+            }
         };
 
         let type_name = Ident::new(&format!("{}_R", name), name.span());
@@ -137,6 +155,25 @@ fn generate_write_types_amethods(fields: &[Field]) -> (Vec<TokenStream>, Vec<Tok
                     }
                 }
             }
+            FieldTy::U16 { range, reset: _ } => {
+                let index = range.start / 32;
+                let offset = range.start % 32;
+                let length = range.end - range.start;
+                let mask = format!("0b{:016b}", ((1 << (length + 1)) - 1))
+                    .parse::<Literal>()
+                    .unwrap();
+                quote! {
+                    pub const unsafe fn set_value(self, value: u16) -> W {
+                        let mut bytes = (self.0).0;
+                        let idx: usize = (bytes.len() - 1 - #index);
+                        let offset: usize = #offset;
+                        let mask: u16 = #mask;
+
+                        bytes[idx] |= ((value & mask) as u32) << offset;
+                        W(bytes)
+                    }
+                }
+            }
         };
 
         let type_name = Ident::new(&format!("{}_W", name), name.span());
@@ -177,6 +214,20 @@ fn generate_default_impl(fields: &[Field]) -> String {
                 }
             }
             FieldTy::U8 { range, reset } => {
+                if let Some(reset) = reset {
+                    let index = range.start / 32;
+                    let offset = range.start % 32;
+                    let _ = write!(
+                        &mut result,
+                        "val[{}] |= 0b{:032b}; // {} = {}",
+                        index,
+                        reset << offset,
+                        name,
+                        reset
+                    );
+                }
+            }
+            FieldTy::U16 { range, reset } => {
                 if let Some(reset) = reset {
                     let index = range.start / 32;
                     let offset = range.start % 32;

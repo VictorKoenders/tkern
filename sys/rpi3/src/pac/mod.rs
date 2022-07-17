@@ -6,12 +6,17 @@
     non_camel_case_types
 )]
 
+use core::marker::PhantomData;
 use core::ptr::NonNull;
 
 pub mod AUX {
     //! There are two Auxiliary registers which control all three devices. One is the interrupt status
     //! register, the second is the Auxiliary enable register. The Auxiliary IRQ status register can
     //! help to hierarchically determine the source of an interrupt.
+
+    use super::Reg;
+    use core::marker::PhantomData;
+    use core::ptr::NonNull;
 
     /// The AUXIRQ register is used to check any pending interrupts which may be asserted by the three Auxiliary sub blocks.
     #[derive(sys_derive::Peripheral)]
@@ -168,6 +173,300 @@ pub mod AUX {
         /// This bit is set if the receive FIFO holds at least 1 symbol.
         #[field(bit = 0, readable)]
         pub Data_ready: bool,
+    }
+
+    /// The `AUX_MU_MSR_REG` register shows the 'modem' status.
+    #[derive(sys_derive::Peripheral)]
+    #[peripheral(address = 0x21_5058)]
+    pub struct MU_MSR_REG {
+        /// This bit is the inverse of the UART1_CTS input Thus:
+        /// - If set the UART1_CTS pin is low
+        /// - If clear the UART1_CTS pin is high
+        #[field(bit = 5, readable, reset = 1)]
+        pub CTS_status: bool,
+    }
+
+    /// The `AUX_MU_SCRATCH` is a single byte storage
+    #[derive(sys_derive::Peripheral)]
+    #[peripheral(address = 0x21_505C)]
+    pub struct MU_SCRATCH {
+        /// One whole byte extra on top of the 134217728 provided by the SDC
+        #[field(bits = 7:0, readable, writable)]
+        pub Scratch: u8,
+    }
+
+    /// The `AUX_MU_CNTL_REG` provides access to some extra useful and nice features not found on a normal 16550 UART
+    #[derive(sys_derive::Peripheral)]
+    #[peripheral(address = 0x21_5060)]
+    pub struct MU_CNTL_REG {
+        /// This bit allows one to invert the CTS auto flow operation polarity.
+        /// - If set the CTS auto flow assert level is low*
+        /// - If clear the CTS auto flow assert level is high*
+        #[field(bit = 7, rw)]
+        pub CTS_assert_level: bool,
+
+        /// This bit allows one to invert the RTS auto flow operation polarity.
+        /// - If set the RTS auto flow assert level is low*
+        /// - If clear the RTS auto flow assert level is high*
+        #[field(bit = 6, rw)]
+        pub RTS_assert_level: bool,
+
+        /// These two bits specify at what receiver FIFO level the RTS line is de-asserted in auto-flow mode.
+        /// - `00` : De-assert RTS when the receive FIFO has 3 empty spaces left.
+        /// - `01` : De-assert RTS when the receive FIFO has 2 empty spaces left.
+        /// - `10` : De-assert RTS when the receive FIFO has 1 empty space left.
+        /// - `11` : De-assert RTS when the receive FIFO has 4 empty spaces left
+        #[field(bits = 5:4, rw)]
+        pub RTS_AUTO_flow_level: u8,
+
+        /// If this bit is set the transmitter will stop if the CTS line is de-asserted.
+        /// If this bit is clear the transmitter will ignore the status of the CTS line
+        #[field(bit = 3, rw)]
+        pub Enable_transmit_Auto_flow_control_using_CTS: bool,
+
+        /// If this bit is set the RTS line will de-assert if the receive FIFO reaches it 'auto flow' level. In fact the
+        /// RTS line will behave as an RTR (Ready To Receive) line.
+        /// If this bit is clear the RTS line is controlled by the AUX_MU_MCR_REG register bit 1
+        #[field(bit = 2, rw)]
+        pub Enable_receive_Auto_flow_control_using_RTS: bool,
+
+        /// If this bit is set the mini UART transmitter is enabled.
+        /// If this bit is clear the mini UART transmitter is disabled
+        #[field(bit = 1, rw)]
+        pub Transmitter_enable: bool,
+
+        /// If this bit is set the mini UART receiver is enabled.
+        /// If this bit is clear the mini UART receiver is disabled
+        #[field(bit = 0, rw)]
+        pub Receiver_enable: bool,
+    }
+
+    /// The `AUX_MU_BAUD` register allows direct access to the 16-bit wide baudrate counter.
+    #[derive(sys_derive::Peripheral)]
+    #[peripheral(address = 0x21_5068)]
+    pub struct MU_BAUD_REG {
+        /// mini UART baudrate counter
+        #[field(bits = 15:0, rw)]
+        pub Baudrate: u16,
+    }
+
+    pub struct Peripheral {
+        pub IRQ: Reg<IRQ>,
+        pub ENB: Reg<ENB>,
+        pub MU_IO_REG: Reg<MU_IO_REG>,
+        pub MU_IER_REG: Reg<MU_IER_REG>,
+        pub MU_IIR_REG: Reg<MU_IIR_REG>,
+        pub MU_LCR_REG: Reg<MU_LCR_REG>,
+        pub MU_MCR_REG: Reg<MU_MCR_REG>,
+        pub MU_LSR_REG: Reg<MU_LSR_REG>,
+        pub MU_MSR_REG: Reg<MU_MSR_REG>,
+        pub MU_SCRATCH: Reg<MU_SCRATCH>,
+        pub MU_CNTL_REG: Reg<MU_CNTL_REG>,
+        pub MU_BAUD_REG: Reg<MU_BAUD_REG>,
+    }
+
+    impl Peripheral {
+        pub unsafe fn new(base_addr: NonNull<()>) -> Self {
+            Self {
+                IRQ: Reg {
+                    base_addr,
+                    pd: PhantomData,
+                },
+                ENB: Reg {
+                    base_addr,
+                    pd: PhantomData,
+                },
+                MU_IO_REG: Reg {
+                    base_addr,
+                    pd: PhantomData,
+                },
+                MU_IER_REG: Reg {
+                    base_addr,
+                    pd: PhantomData,
+                },
+                MU_IIR_REG: Reg {
+                    base_addr,
+                    pd: PhantomData,
+                },
+                MU_LCR_REG: Reg {
+                    base_addr,
+                    pd: PhantomData,
+                },
+                MU_MCR_REG: Reg {
+                    base_addr,
+                    pd: PhantomData,
+                },
+                MU_LSR_REG: Reg {
+                    base_addr,
+                    pd: PhantomData,
+                },
+                MU_MSR_REG: Reg {
+                    base_addr,
+                    pd: PhantomData,
+                },
+                MU_SCRATCH: Reg {
+                    base_addr,
+                    pd: PhantomData,
+                },
+                MU_CNTL_REG: Reg {
+                    base_addr,
+                    pd: PhantomData,
+                },
+                MU_BAUD_REG: Reg {
+                    base_addr,
+                    pd: PhantomData,
+                },
+            }
+        }
+    }
+}
+
+pub mod GPIO {
+    /// The function select registers are used to define the operation of the general-purpose I/O
+    /// pins. Each of the 54 GPIO pins has at least two alternative functions as defined in section
+    /// 16.2. The FSEL{n} field determines the functionality of the nth GPIO pin. All unused
+    /// alternative function lines are tied to ground and will output a “0” if selected. All pins reset
+    /// to normal GPIO input operation
+    #[derive(sys_derive::Peripheral)]
+    #[peripheral(address = 0x20_0004)]
+    pub struct GPFSEL1 {
+        /// FSEL19 - Function Select 19
+        /// - 000 = GPIO Pin 19 is an input
+        /// - 001 = GPIO Pin 19 is an output
+        /// - 100 = GPIO Pin 19 takes alternate function 0
+        /// - 101 = GPIO Pin 19 takes alternate function 1
+        /// - 110 = GPIO Pin 19 takes alternate function 2
+        /// - 111 = GPIO Pin 19 takes alternate function 3
+        /// - 011 = GPIO Pin 19 takes alternate function 4
+        /// - 010 = GPIO Pin 19 takes alternate function 5
+        #[field(bits = 29:27, rw)]
+        pub FSEL19: u8,
+        #[field(bits = 26:24, rw)]
+        pub FSEL18: u8,
+        #[field(bits = 23:21, rw)]
+        pub FSEL17: u8,
+        #[field(bits = 20:18, rw)]
+        pub FSEL16: u8,
+        #[field(bits = 17:15, rw)]
+        pub FSEL15: u8,
+        #[field(bits = 14:12, rw)]
+        pub FSEL14: u8,
+        #[field(bits = 11:9, rw)]
+        pub FSEL13: u8,
+        #[field(bits = 8:6, rw)]
+        pub FSEL12: u8,
+        #[field(bits = 5:3, rw)]
+        pub FSEL11: u8,
+        #[field(bits = 2:0, rw)]
+        pub FSEL10: u8,
+    }
+
+    /// The GPIO Pull-up/down Register controls the actuation of the internal pull-up/down
+    /// control line to ALL the GPIO pins. This register must be used in conjunction with the 2
+    /// `GPPUDCLKn` registers.
+    ///
+    /// Note that it is not possible to read back the current Pull-up/down settings and so it is the
+    /// users’ responsibility to ‘remember’ which pull-up/downs are active. The reason for this is
+    /// that GPIO pull-ups are maintained even in power-down mode when the core is off, when
+    /// all register contents are lost.
+    ///
+    /// The Alternate function table also has the pull state which is applied after a power down
+    #[derive(sys_derive::Peripheral)]
+    #[peripheral(address = 0x20_0094)]
+    pub struct GPPUD {
+        /// PUD - GPIO Pin Pull-up/down
+        /// - 00 = Off – disable pull-up/down
+        /// - 01 = Enable Pull Down control
+        /// - 10 = Enable Pull Up control
+        /// - 11 = Reserved
+        /// *Use in conjunction with GPPUDCLK0/1/2
+        #[field(bits = 1:0, rw)]
+        pub PUD: u8,
+    }
+
+    /// The GPIO Pull-up/down Clock Registers control the actuation of internal pull-downs on
+    /// the respective GPIO pins. These registers must be used in conjunction with the GPPUD
+    /// register to effect GPIO Pull-up/down changes. The following sequence of events is
+    /// required:
+    /// 1. Write to GPPUD to set the required control signal (i.e. Pull-up or Pull-Down or neither
+    /// to remove the current Pull-up/down)
+    /// 2. Wait 150 cycles – this provides the required set-up time for the control signal
+    /// 3. Write to GPPUDCLK0/1 to clock the control signal into the GPIO pads you wish to
+    ///    modify – NOTE only the pads which receive a clock will be modified, all others will
+    ///    retain their previous state.
+    /// 4. Wait 150 cycles – this provides the required hold time for the control signal
+    /// 5. Write to GPPUD to remove the control signal
+    /// 6. Write to GPPUDCLK0/1 to remove the clock
+    #[derive(sys_derive::Peripheral)]
+    #[peripheral(address = 0x20_0098)]
+    pub struct GPPUDCLK0 {
+        /// - 0 = No Effect
+        /// - 1 = Assert Clock on line (n)
+        /// *Must be used in conjunction with GPPUD
+        #[field(bit = 31, rw)]
+        pub PUDCLK31: bool,
+        #[field(bit = 14, rw)]
+        pub PUDCLK14: bool,
+        #[field(bit = 15, rw)]
+        pub PUDCLK15: bool,
+    }
+
+    pub struct Peripheral {
+        pub GPFSEL1: super::Reg<GPFSEL1>,
+        pub GPPUD: super::Reg<GPPUD>,
+        pub GPPUDCLK0: super::Reg<GPPUDCLK0>,
+    }
+
+    impl Peripheral {
+        pub unsafe fn new(base_addr: core::ptr::NonNull<()>) -> Self {
+            Self {
+                GPFSEL1: super::Reg {
+                    base_addr,
+                    pd: core::marker::PhantomData,
+                },
+                GPPUD: super::Reg {
+                    base_addr,
+                    pd: core::marker::PhantomData,
+                },
+                GPPUDCLK0: super::Reg {
+                    base_addr,
+                    pd: core::marker::PhantomData,
+                },
+            }
+        }
+    }
+}
+pub struct Reg<P: Peripheral> {
+    base_addr: NonNull<()>,
+    pd: PhantomData<P>,
+}
+
+impl<P: Peripheral> Reg<P> {
+    pub fn read(&self) -> P::R {
+        unsafe { P::read(self.base_addr) }
+    }
+
+    pub fn write<F>(&mut self, f: F)
+    where
+        F: FnOnce(P::W) -> P::W,
+    {
+        let w = P::W::default();
+        let w = f(w);
+        unsafe {
+            P::write(self.base_addr, w);
+        }
+    }
+
+    pub fn modify<F>(&mut self, f: F)
+    where
+        F: FnOnce(P::R, P::W) -> P::W,
+    {
+        let read = self.read();
+        self.write(|w| f(read, w));
+    }
+
+    pub fn clear(&mut self) {
+        self.write(|w| w);
     }
 }
 

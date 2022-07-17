@@ -111,8 +111,12 @@ pub fn get_struct_fields(input: &DeriveInput) -> Result<Vec<Field>, (String, Spa
         while let Some(token) = tokens.next() {
             match token {
                 TokenTree::Punct(p) if p.as_char() == ',' => continue,
-                TokenTree::Ident(i) if i == "readable" => readable = true,
-                TokenTree::Ident(i) if i == "writable" => writable = true,
+                TokenTree::Ident(i) if i == "readable" || i == "r" => readable = true,
+                TokenTree::Ident(i) if i == "writable" || i == "w" => writable = true,
+                TokenTree::Ident(i) if i == "rw" => {
+                    readable = true;
+                    writable = true;
+                }
                 TokenTree::Ident(i) if i == "reset" => {
                     match tokens.next() {
                         Some(TokenTree::Punct(p)) if p.as_char() == '=' => {}
@@ -236,6 +240,59 @@ pub fn get_struct_fields(input: &DeriveInput) -> Result<Vec<Field>, (String, Spa
                 };
                 FieldTy::U8 { range, reset }
             }
+            "u16" => {
+                let reset = if let Some(reset) = reset {
+                    let str = reset.to_string();
+                    let reset = if let Some(base_2) = str.strip_prefix("0b") {
+                        u16::from_str_radix(base_2, 2)
+                    } else if let Some(base_16) = str.strip_prefix("0x") {
+                        u16::from_str_radix(base_16, 16)
+                    } else {
+                        str.parse()
+                    }
+                    .map_err(|_| ("Invalid reset value for u16".to_string(), reset.span()))?;
+
+                    Some(reset)
+                } else {
+                    None
+                };
+                let range = if let Some(bits) = bits {
+                    match bits.as_slice() {
+                        [TokenTree::Literal(high), TokenTree::Punct(colon), TokenTree::Literal(low)]
+                            if colon.as_char() == ':' =>
+                        {
+                            let high_span = high.span();
+                            let high = high
+                                .to_string()
+                                .parse()
+                                .map_err(|_| ("Invalid value".to_string(), high.span()))?;
+                            let low = low
+                                .to_string()
+                                .parse()
+                                .map_err(|_| ("Invalid value".to_string(), low.span()))?;
+                            if low > high || low + 16 <= high {
+                                return Err(("bit range too big for u16".to_string(), high_span));
+                            }
+                            if low / 32 != high / 32 {
+                                return Err(("bit range overlaps u32 boundary, this is currently not supported".to_string(), high_span));
+                            }
+                            low..high
+                        }
+                        [token, ..] => {
+                            return Err((
+                                "Invalid value, should be `high:low`".to_string(),
+                                token.span(),
+                            ));
+                        }
+                        _ => {
+                            return Err(("Missing `bits = high:low`".to_string(), name.span()));
+                        }
+                    }
+                } else {
+                    return Err(("Missing `bits = high:low` field".to_string(), name.span()));
+                };
+                FieldTy::U16 { range, reset }
+            }
             _ => {
                 return Err((
                     format!("Unknown type {:?}, only `bool` is supported", field.ty),
@@ -274,5 +331,9 @@ pub enum FieldTy {
     U8 {
         range: Range<usize>,
         reset: Option<u8>,
+    },
+    U16 {
+        range: Range<usize>,
+        reset: Option<u16>,
     },
 }
