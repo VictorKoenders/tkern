@@ -72,7 +72,7 @@ version = "7.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f75db6964ed6748e88ff46f9aa209249a0aefe6b06d4b9e9ab820c867586d51a"
 dependencies = [
- "tock-registers",
+ "tock-registers 0.7.0",
 ]
 
 [[package]]
@@ -216,7 +216,7 @@ dependencies = [
  "cortex-a",
  "custom_debug_derive",
  "tkern_derive_utils",
- "tock-registers",
+ "tock-registers 0.8.0",
  "utils",
  "videocore_mailbox",
 ]
@@ -235,6 +235,12 @@ name = "tock-registers"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ee8fba06c1f4d0b396ef61a54530bb6b28f0dc61c38bc8bc5a5a48161e6282e"
+
+[[package]]
+name = "tock-registers"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a15a986cbf21b5f1fbc3f6357e7ff8446bd6a0b642463863352cc2dc767583b5"
 
 [[package]]
 name = "unicode-ident"
