@@ -16,7 +16,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 allocator = { path = "libs/allocator" }
-cortex-a = { version = "7.4.0", default-features = false, features = ["nightly"] }
+cortex-a = { version = "7.5.0", default-features = false, features = ["nightly"] }
 tock-registers = { version = "0.7.0", default-features = false }
 tkern_derive_utils = { path = "libs/tkern_derive_utils" }
 utils = { path = "libs/utils" }
