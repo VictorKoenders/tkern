@@ -78,7 +78,7 @@ pub extern "C" fn kernel_main() -> ! {
             for tag in atag.iter() {
                 output::info(|w| {
                     use core::fmt::Write as _;
-                    let _ = w.write_fmt(format_args!("  {:?}", tag));
+                    let _ = w.write_fmt(format_args!("  {tag:?}"));
                     match tag {
                         atags::Atag::Memory(mem) => {
                             memory = Some(mem.clone());
@@ -109,7 +109,7 @@ pub extern "C" fn kernel_main() -> ! {
         info!(
             "Memory starts at 0x{:08X} and is {} (end = 0x{:08X})",
             memory_start,
-            utils::HumanReadableSize::new(memory_length as usize),
+            utils::HumanReadableSize::new(memory_length),
             memory.start + memory.size
         );
         let length = NonZeroUsize::new(memory_length).expect("Memory size is detected to be 0");

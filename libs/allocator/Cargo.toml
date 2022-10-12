@@ -1,7 +1,7 @@
 [package]
 name = "allocator"
 version = "0.0.0"
-authors = [ "Trangar <crates@trangar.com>" ]
+authors = ["Trangar <crates@trangar.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 

@@ -263,7 +263,7 @@ impl<T: MailboxItemTuple> Request<T> {
         debug_assert!(length <= 144);
         let mut buffer: Aligned<A16, [u8; 144]> = Aligned([0u8; 144]);
 
-        buffer[0..4].copy_from_slice(&((length + padding) as u32).to_le_bytes());
+        buffer[0..4].copy_from_slice(&(length + padding).to_le_bytes());
         buffer[4..8].copy_from_slice(&0u32.to_le_bytes());
         self.data.write(&mut buffer[8..length as usize]);
         buffer

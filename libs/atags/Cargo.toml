@@ -1,7 +1,7 @@
 [package]
 name = "atags"
 version = "0.0.2"
-authors = [ "Trangar <crates@trangar.com>" ]
+authors = ["Trangar <crates@trangar.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Parsing of linux ATAG data structures"

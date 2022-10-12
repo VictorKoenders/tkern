@@ -7,11 +7,23 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 aligned = { version = "0.4.1", default-features = false }
 bitfield = { version = "0.14.0", default-features = false }
-bytemuck = { version = "1.10.0", default-features = false }
-cortex-a = { version = "7.4.0", default-features = false }
+cortex-a = { version = "8.0.0", default-features = false }
 tkern_derive_utils = { path = "../tkern_derive_utils" }
-volatile = { version = "0.4.5", features = ["unstable"], default-features = false }
-font8x8 = { version = "0.3.1", default-features = false, features = ["unicode"] }
+
+[dependencies.bytemuck]
+version = "1.12.1"
+features = ["aarch64_simd"]
+default-features = false
+
+[dependencies.font8x8]
+version = "0.3.1"
+default-features = false
+features = ["unicode"]
+
+[dependencies.volatile]
+version = "0.4.5"
+default-features = false
+features = ["unstable"]
 
 [dev-dependencies]
 memoffset = "0.6.5"

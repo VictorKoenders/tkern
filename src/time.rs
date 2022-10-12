@@ -11,7 +11,7 @@ impl Time {
         let cntpct = CNTPCT_EL0.get();
 
         let current_count: u64 = cntpct * NS_PER_S;
-        let frq: u64 = CNTFRQ_EL0.get() as u64;
+        let frq = CNTFRQ_EL0.get();
 
         Duration::from_nanos(current_count / frq)
     }

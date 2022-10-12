@@ -28,7 +28,7 @@ impl fmt::Display for HumanReadableSize {
             Self::GigaBytes(b) => ("gb", b),
             Self::TeraBytes(b) => ("tb", b),
         };
-        write!(f, "{:.02} {}", value, tag)
+        write!(f, "{value:.02} {tag}")
     }
 }
 
