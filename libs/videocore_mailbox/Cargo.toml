@@ -26,4 +26,4 @@ default-features = false
 features = ["unstable"]
 
 [dev-dependencies]
-memoffset = "0.6.5"
+memoffset = "0.7.1"
