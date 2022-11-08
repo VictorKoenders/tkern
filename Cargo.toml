@@ -30,7 +30,7 @@ features = ["aarch64_simd"]
 default-features = false
 
 [dependencies.cortex-a]
-version = "8.0.0"
+version = "8.1.1"
 default-features = false
 features = ["nightly"]
 

@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 aligned = { version = "0.4.1", default-features = false }
 bitfield = { version = "0.14.0", default-features = false }
-cortex-a = { version = "8.0.0", default-features = false }
+cortex-a = { version = "8.1.1", default-features = false }
 tkern_derive_utils = { path = "../tkern_derive_utils" }
 
 [dependencies.bytemuck]
