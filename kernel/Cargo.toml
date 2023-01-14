@@ -1,0 +1,2 @@
+[workspace]
+members = ["arch/common", "arch/x86_64", "arch/aarch64"]

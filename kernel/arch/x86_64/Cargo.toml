@@ -1,0 +1,9 @@
+[package]
+name = "tkern_arch_x86_64"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+bootloader = "0.9.23"
+tkern_arch = { path = "../common" }
