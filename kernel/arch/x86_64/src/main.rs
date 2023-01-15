@@ -20,7 +20,13 @@ fn efi_main(
     }
     system_table.stdout().clear().unwrap();
     uefi_services::init(&mut system_table).unwrap();
-    view::State::new(image, system_table).run();
+    view::run(&mut system_table);
+    #[cfg(feature = "qemu")]
+    {
+        use qemu_exit::{QEMUExit, X86};
+        X86::new(0xf4, 1).exit_success();
+    }
+    uefi::Status(0)
 }
 
 /// This function is called on panic.
