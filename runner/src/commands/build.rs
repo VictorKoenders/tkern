@@ -7,7 +7,7 @@ use cargo::{
     ops::{CompileOptions, Packages},
     util::command_prelude::CompileMode,
 };
-use std::{convert::TryFrom, fs::File, io::Seek, path::PathBuf};
+use std::{convert::TryFrom, fs::File, io::Seek, path::PathBuf, time::Instant};
 use std::{fs, io, path::Path};
 
 pub fn build(workspace: &mut Workspace, args: BuildArgs) -> std::io::Result<PathBuf> {
@@ -18,6 +18,7 @@ pub fn build(workspace: &mut Workspace, args: BuildArgs) -> std::io::Result<Path
 }
 
 fn build_x86_64(workspace: &mut Workspace, _args: BuildArgs) -> std::io::Result<PathBuf> {
+    let compile_start = Instant::now();
     let mut options = CompileOptions::new(workspace.config(), CompileMode::Build)
         .expect("Could not get compile options");
     options.build_config.requested_kinds = vec![CompileKind::Target(
@@ -27,19 +28,37 @@ fn build_x86_64(workspace: &mut Workspace, _args: BuildArgs) -> std::io::Result<
 
     let result = cargo::ops::compile(workspace, &options).expect("Could not compile");
     let output = result.binaries.first().expect("No binary created");
-    println!("Kernel compiled to {}", output.path.to_string_lossy());
+    println!("In {}:", output.path.parent().unwrap().to_string_lossy());
+    println!(
+        "  Kernel compiled to {} ({:?})",
+        output.path.file_name().unwrap().to_string_lossy(),
+        compile_start.elapsed(),
+    );
     let fat_path = output.path.with_extension("fat");
     let disk_path = output.path.with_extension("gdt");
+    let fat_start = Instant::now();
     create_fat_filesystem(&fat_path, &output.path);
+    let fat_elapsed = fat_start.elapsed();
+    let gpt_start = Instant::now();
     create_gpt_disk(&disk_path, &fat_path);
+    let gpt_elapsed = gpt_start.elapsed();
 
-    println!("Generated .fat and .gdt");
+    println!(
+        "  Generated {} ({:?})",
+        fat_path.file_name().unwrap().to_string_lossy(),
+        fat_elapsed
+    );
+    println!(
+        "  Generated {} ({:?})",
+        disk_path.file_name().unwrap().to_string_lossy(),
+        gpt_elapsed
+    );
     Ok(output.path.clone())
 }
 
 fn create_fat_filesystem(fat_path: &Path, efi_file: &Path) {
     // retrieve size of `.efi` file and round it up
-    let efi_size = fs::metadata(&efi_file).unwrap().len();
+    let efi_size = fs::metadata(efi_file).unwrap().len();
     // size of a megabyte
     let mb = 1024 * 1024;
     // round it to next megabyte
@@ -51,7 +70,7 @@ fn create_fat_filesystem(fat_path: &Path, efi_file: &Path) {
         .write(true)
         .create(true)
         .truncate(true)
-        .open(&fat_path)
+        .open(fat_path)
         .unwrap();
     fat_file.set_len(efi_size_rounded).unwrap();
 
@@ -66,7 +85,7 @@ fn create_fat_filesystem(fat_path: &Path, efi_file: &Path) {
     root_dir.create_dir("efi/boot").unwrap();
     let mut bootx64 = root_dir.create_file("efi/boot/bootx64.efi").unwrap();
     bootx64.truncate().unwrap();
-    io::copy(&mut fs::File::open(&efi_file).unwrap(), &mut bootx64).unwrap();
+    io::copy(&mut fs::File::open(efi_file).unwrap(), &mut bootx64).unwrap();
 }
 
 fn create_gpt_disk(disk_path: &Path, fat_image: &Path) {
@@ -76,11 +95,11 @@ fn create_gpt_disk(disk_path: &Path, fat_image: &Path) {
         .truncate(true)
         .read(true)
         .write(true)
-        .open(&disk_path)
+        .open(disk_path)
         .unwrap();
 
     // set file size
-    let partition_size: u64 = fs::metadata(&fat_image).unwrap().len();
+    let partition_size: u64 = fs::metadata(fat_image).unwrap().len();
     let disk_size = partition_size + 1024 * 64; // for GPT headers
     disk.set_len(disk_size).unwrap();
 
@@ -113,5 +132,5 @@ fn create_gpt_disk(disk_path: &Path, fat_image: &Path) {
 
     // place the FAT filesystem in the newly created partition
     disk.seek(io::SeekFrom::Start(start_offset)).unwrap();
-    io::copy(&mut File::open(&fat_image).unwrap(), &mut disk).unwrap();
+    io::copy(&mut File::open(fat_image).unwrap(), &mut disk).unwrap();
 }

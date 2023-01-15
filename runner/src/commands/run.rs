@@ -34,11 +34,22 @@ fn run_x86_64(_args: RunArgs, path: PathBuf) -> std::io::Result<()> {
         "-bios",
         "OVMF-pure-efi.fd",
     ]);
-    println!("{command:?}");
+    debug_cmd(&command);
     let output = command.spawn().unwrap().wait().unwrap();
 
     if !output.success() && output.code().is_some() {
         std::process::exit(output.code().unwrap());
     }
     Ok(())
+}
+
+fn debug_cmd(command: &Command) {
+    print!("Running: {}", command.get_program().to_string_lossy());
+    for arg in command.get_args() {
+        print!(" {arg:?}");
+    }
+    println!();
+    if let Some(dir) = command.get_current_dir() {
+        println!("  in dir {}", dir.to_string_lossy());
+    }
 }
