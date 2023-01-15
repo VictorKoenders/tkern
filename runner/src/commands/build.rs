@@ -2,12 +2,15 @@ use crate::cli_args::*;
 use cargo::{
     core::{
         compiler::{CompileKind, CompileTarget},
-        Workspace,
+        FeatureValue, Workspace,
     },
     ops::{CompileOptions, Packages},
     util::command_prelude::CompileMode,
 };
-use std::{convert::TryFrom, fs::File, io::Seek, path::PathBuf, time::Instant};
+use std::{
+    collections::BTreeSet, convert::TryFrom, fs::File, io::Seek, path::PathBuf, rc::Rc,
+    time::Instant,
+};
 use std::{fs, io, path::Path};
 
 pub fn build(workspace: &mut Workspace, args: BuildArgs) -> std::io::Result<PathBuf> {
@@ -17,7 +20,7 @@ pub fn build(workspace: &mut Workspace, args: BuildArgs) -> std::io::Result<Path
     }
 }
 
-fn build_x86_64(workspace: &mut Workspace, _args: BuildArgs) -> std::io::Result<PathBuf> {
+fn build_x86_64(workspace: &mut Workspace, args: BuildArgs) -> std::io::Result<PathBuf> {
     let compile_start = Instant::now();
     let mut options = CompileOptions::new(workspace.config(), CompileMode::Build)
         .expect("Could not get compile options");
@@ -25,6 +28,10 @@ fn build_x86_64(workspace: &mut Workspace, _args: BuildArgs) -> std::io::Result<
         CompileTarget::new("x86_64-unknown-uefi").unwrap(),
     )];
     options.spec = Packages::Packages(vec!["tkern_arch_x86_64".to_string()]);
+    if args.with_qemu {
+        options.cli_features.features =
+            Rc::new(BTreeSet::from([FeatureValue::Feature("qemu".into())]));
+    }
 
     let result = cargo::ops::compile(workspace, &options).expect("Could not compile");
     let output = result.binaries.first().expect("No binary created");

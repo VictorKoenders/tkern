@@ -17,10 +17,16 @@ pub enum Commands {
 pub struct RunArgs {
     pub arch: Arch,
     pub emulator: Emulator,
+    #[arg(long, short)]
+    pub release: bool,
 }
 #[derive(Args, Debug)]
 pub struct BuildArgs {
     pub arch: Arch,
+    #[arg(long, short)]
+    pub with_qemu: bool,
+    #[arg(long, short)]
+    pub release: bool,
 }
 #[derive(Args, Debug)]
 pub struct ObjDumpArgs {

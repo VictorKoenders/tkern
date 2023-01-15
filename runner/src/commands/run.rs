@@ -4,7 +4,14 @@ use crate::cli_args::*;
 use cargo::core::Workspace;
 
 pub fn run(workspace: &mut Workspace, args: RunArgs) -> std::io::Result<()> {
-    let path = super::build::build(workspace, BuildArgs { arch: args.arch })?;
+    let path = super::build::build(
+        workspace,
+        BuildArgs {
+            arch: args.arch,
+            with_qemu: true,
+            release: args.release,
+        },
+    )?;
     match args.arch {
         Arch::X86_64 => run_x86_64(args, path),
         Arch::Aarch64 => unimplemented!(),
@@ -22,17 +29,18 @@ fn run_x86_64(_args: RunArgs, path: PathBuf) -> std::io::Result<()> {
     }
 
     let mut command = Command::new("qemu-system-x86_64");
+    let drive = format!(
+        "format=raw,file={}",
+        path.with_extension("gdt")
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+    );
+    #[rustfmt::skip]
     command.current_dir(dir).args([
-        "-drive",
-        &format!(
-            "format=raw,file={}",
-            path.with_extension("gdt")
-                .file_name()
-                .unwrap()
-                .to_string_lossy()
-        ),
-        "-bios",
-        "OVMF-pure-efi.fd",
+        "-drive", &drive,
+        "-bios", "OVMF-pure-efi.fd",
+        "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04"
     ]);
     debug_cmd(&command);
     let output = command.spawn().unwrap().wait().unwrap();

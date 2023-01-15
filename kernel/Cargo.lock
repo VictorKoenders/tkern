@@ -39,6 +39,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "qemu-exit"
+version = "3.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ff023245bfcc73fb890e1f8d5383825b3131cc920020a5c487d6f113dfc428a"
+
+[[package]]
 name = "quote"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -73,6 +79,7 @@ dependencies = [
 name = "tkern_arch_x86_64"
 version = "0.0.0"
 dependencies = [
+ "qemu-exit",
  "tkern_arch",
  "uefi",
  "uefi-services",
