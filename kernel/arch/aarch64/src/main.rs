@@ -3,20 +3,31 @@
 
 mod arch;
 
+use core::arch::global_asm;
+use core::fmt::Write;
 use core::panic::PanicInfo;
 
-static HELLO: &[u8] = b"Hello World!";
+global_asm!(include_str!("../boot.s"));
+
+struct QemuWriter;
+impl Write for QemuWriter {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        for char in s.chars() {
+            unsafe { core::ptr::write_volatile(0x3F20_1000_usize as *mut u8, char as u8) }
+        }
+        Ok(())
+    }
+}
+
+macro_rules! println {
+    ($($arg:tt)*) => {{
+        let _ = writeln!(&mut QemuWriter, $($arg)*);
+    }}
+}
 
 #[no_mangle]
-pub extern "C" fn _start() -> ! {
-    let vga_buffer = 0xb8000 as *mut u8;
-
-    for (i, &byte) in HELLO.iter().enumerate() {
-        unsafe {
-            *vga_buffer.offset(i as isize * 2) = byte;
-            *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
-        }
-    }
+pub extern "C" fn _start_rust() -> ! {
+    println!("Hello world");
 
     loop {}
 }

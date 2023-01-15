@@ -1,9 +1,13 @@
+cargo-features = ["per-package-target"]
+
 [package]
 name = "tkern_arch_x86_64"
 version = "0.0.0"
 edition = "2021"
 publish = false
+default-target = "x86_64-unknown-uefi"
 
 [dependencies]
-bootloader = "0.9.23"
 tkern_arch = { path = "../common" }
+uefi = { version = "0.18", default-features = false }
+uefi-services = { version = "0.15.0", default-features = false }

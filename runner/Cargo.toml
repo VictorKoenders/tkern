@@ -6,3 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+clap = { version = "4.1", features = ["derive"] }
+cargo = "0.67"
+lazy_static = "1.4"
+fatfs = "0.3"
+gpt = "3.0"
+
+[dependencies.reqwest]
+version = "0.11"
+default-features = false
+features = ["blocking", "rustls-tls"]
