@@ -1,8 +1,11 @@
+cargo-features = ["per-package-target"]
+
 [package]
 name = "tkern_arch_aarch64"
 version = "0.0.0"
 edition = "2021"
 publish = false
+default-target = "aarch64-unknown-none-softfloat"
 
 [dependencies]
 tkern_arch = { path = "../common" }

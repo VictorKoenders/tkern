@@ -4,9 +4,9 @@
 extern crate alloc;
 
 mod arch;
-mod view;
+// mod view;
 
-use core::{mem::MaybeUninit, panic::PanicInfo};
+use core::panic::PanicInfo;
 use uefi::{
     prelude::entry,
     proto::console::{
@@ -14,7 +14,6 @@ use uefi::{
         text::{Key, ScanCode},
     },
     table::boot::SearchType,
-    Handle,
 };
 use uefi_services::println;
 
