@@ -8,6 +8,8 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
+    // TODO: `Docs` command
+    // TODO: `Fmt` command
     Run(RunArgs),
     Build(BuildArgs),
     ObjDump(ObjDumpArgs),

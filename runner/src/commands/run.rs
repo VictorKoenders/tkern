@@ -1,3 +1,7 @@
+// TODO:
+// - prompt if OVM-pure-efi is not installed, to download it
+// - prompt if qemu-system-x86_64 is not installed, to download it
+
 use std::{path::PathBuf, process::Command};
 
 use crate::cli_args::*;

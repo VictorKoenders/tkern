@@ -31,17 +31,22 @@ macro_rules! impl_guid_identity_variants {
         }
 
         impl $container {
-            fn from_guid(guid: uefi::Guid) -> Option<Self> {
+            pub fn from_guid(guid: uefi::Guid) -> Option<Self> {
                 match guid {
                     $(<$ty as uefi::Identify>::GUID => Some(Self::$name),)*
                     _ => None
                 }
             }
-            /*const fn guid(&self) -> uefi::Guid {
+            pub fn all() -> &'static [Self] {
+                &[
+                    $(Self::$name,)*
+                ]
+            }
+            pub const fn guid(&self) -> uefi::Guid {
                 match self {
                     $(Self::$name => <$ty as uefi::Identify>::GUID,)*
                 }
-            }*/
+            }
         }
     }
 }

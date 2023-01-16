@@ -14,4 +14,8 @@ qemu = ["dep:qemu-exit"]
 tkern_arch = { path = "../common" }
 uefi = { version = "0.18", default-features = false, features = ["alloc"] }
 uefi-services = { version = "0.15.0", default-features = false }
+font8x8 = { version = "0.3", default-features = false, features = ["unicode"] }
+
+# Optional features
+## qemu-exit, part of the `qemu` feature
 qemu-exit = { version = "3.0", optional = true }

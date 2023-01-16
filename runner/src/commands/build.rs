@@ -1,3 +1,7 @@
+// TODO:
+// - prompt if `rust-src` component is not installed
+// - prompt if target `x86_64-unknown-uefi` is not installed
+
 use crate::cli_args::*;
 use cargo::{
     core::{
