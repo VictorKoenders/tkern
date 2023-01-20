@@ -11,7 +11,7 @@ cortex-a = { version = "8.1.1", default-features = false }
 tkern_derive_utils = { path = "../tkern_derive_utils" }
 
 [dependencies.bytemuck]
-version = "1.12.3"
+version = "1.13.0"
 features = ["aarch64_simd"]
 default-features = false
 
