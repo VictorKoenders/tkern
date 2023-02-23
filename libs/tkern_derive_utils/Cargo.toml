@@ -12,6 +12,6 @@ quote = { version = "1.0.23", default-features = false }
 proc-macro2 = { version = "1.0.51", default-features = false }
 
 [dependencies.syn]
-version = "1.0.107"
+version = "1.0.108"
 features = ["extra-traits"]
 default-features = false
