@@ -22,7 +22,7 @@ utils = { path = "libs/utils" }
 custom_debug_derive = { version = "0.5.1", default-features = false }
 atags = { path = "libs/atags" }
 videocore_mailbox = { path = "libs/videocore_mailbox" }
-bitflags = { version = "1.3.2", default-features = false }
+bitflags = { version = "2.0.2", default-features = false }
 
 [dependencies.bytemuck]
 version = "1.13.1"
