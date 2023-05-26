@@ -9,7 +9,7 @@ proc-macro = true
 
 [dependencies]
 quote = { version = "1.0.23", default-features = false }
-proc-macro2 = { version = "1.0.52", default-features = false }
+proc-macro2 = { version = "1.0.59", default-features = false }
 
 [dependencies.syn]
 version = "1.0.109"
